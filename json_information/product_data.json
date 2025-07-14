@@ -1,0 +1,90 @@
+{
+    "name": "Key Nutrients",
+    "values": [
+        {
+            "name": null,
+            "mainNutrient": {
+                "name": "Total Fat",
+                "amount": null,
+                "dvp": "0%",
+                "standardServingAmount": null,
+                "childNutrients": null
+            },
+            "childNutrients": [
+                {
+                    "name": "Saturated Fat",
+                    "amount": "0g",
+                    "dvp": null,
+                    "standardServingAmount": null,
+                    "childNutrients": null
+                },
+                {
+                    "name": "Trans Fat",
+                    "amount": "0g",
+                    "dvp": null,
+                    "standardServingAmount": null,
+                    "childNutrients": null
+                }
+            ]
+        },
+        {
+            "name": null,
+            "mainNutrient": {
+                "name": "Cholesterol",
+                "amount": "0.0mg",
+                "dvp": null,
+                "standardServingAmount": null,
+                "childNutrients": null
+            },
+            "childNutrients": null
+        },
+        {
+            "name": null,
+            "mainNutrient": {
+                "name": "Sodium",
+                "amount": "0",
+                "dvp": "0%",
+                "standardServingAmount": null,
+                "childNutrients": null
+            },
+            "childNutrients": null
+        },
+        {
+            "name": null,
+            "mainNutrient": {
+                "name": "Total Carbohydrate",
+                "amount": "0g",
+                "dvp": "0%",
+                "standardServingAmount": null,
+                "childNutrients": null
+            },
+            "childNutrients": [
+                {
+                    "name": "Dietary Fiber",
+                    "amount": "1g",
+                    "dvp": null,
+                    "standardServingAmount": null,
+                    "childNutrients": null
+                },
+                {
+                    "name": "Sugars",
+                    "amount": "11g",
+                    "dvp": null,
+                    "standardServingAmount": null,
+                    "childNutrients": null
+                }
+            ]
+        },
+        {
+            "name": null,
+            "mainNutrient": {
+                "name": "Protein",
+                "amount": null,
+                "dvp": "0%",
+                "standardServingAmount": null,
+                "childNutrients": null
+            },
+            "childNutrients": null
+        }
+    ]
+}
