@@ -6,12 +6,13 @@ import requests
 import json
 import link_scrape
 import queue
+import os
 
 walmart_url = "https://www.walmart.com/"
 
 # not sure if this is obtaining the data from the correct zip code
 # might have to add cookies or add some type of proxy system? Proxy would cost money 
-# sometimes gets captcha error 307 but I think using a vpn works? long term issue and will either have to implement a proxy or find some other method
+# sometimes gets captcha 307/402 but I think using a vpn works? long term issue and will either have to implement a proxy or find some other method
 # sometimes changing the headers content or changing what headers are included works as well
 HEADERS = {
     # "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
@@ -29,74 +30,74 @@ HEADERS = {
 
 # List of search queries
 search_queries = [
-    # "beverages",
-    # "milk",
-    # "drinks",
-    # "coffee",
-    # "sparkling water",
-    # "water",
-    # "juice",
-    # "tea",
-    # "soda",
-    # "energy drinks",
-    # "fruit juice",
-    # "fruit punch juice",
-    # "sports drinks",
-    # "flavored water",
-    # "mineral water",
-    # "spring water",
-    # "purified water",
-    # "distilled water",
-    # "bottled water",
-    # "iced tea",
-    # "lemonade",
-    # "kombucha",
-    # "probiotic drinks",
-    # "plant-based milk",
-    # "dairy-free milk",
-    # "lactose-free milk",
-    # "mocha",
-    # "latte",
-    # "espresso",
-    # "iced coffee",
-    # "coffee creamer",
-    # "coffee syrup",
-    # "hot chocolate",
-    # "chocolate milk",
-    # "smoothie",
-    # "cola",
-    # "diet soda",
-    # "root beer",
-    # "ginger ale",
-    # "cream soda",
-    # "tonic water",
-    # "club soda",
-    # "orange soda",
-    # "grape soda",
-    # "lemon-lime soda",
-    # "fruit soda",
-    # "berry soda",
-    # "vanilla soda",
-    # "cherry soda",
-    # "sugar-free soda",
-    # "sweet tea",
-    # "bubble tea",
-    # "milkshake",
-    # "fruit flavor",
-    # "milk drinks",
-    # "milk beverages",
-    # "fruit flavor sparkling water",
-    # "fruit punch",
-    # "dairy drinks",
-    # "yogurt drink",
-    # "non sweet tea",
-    # "iced sweet tea",
-    # "fruit punch soda",
-    # "fruit punch juice",
-    # "fruit punch flavor sparkling water",
-    # "fruit flavor sparkling water",
-    # "fruit flavor sparkling water with real fruit",
-    # "fruit flavor sparkling water with natural flavors",
+    "beverages",
+    "milk",
+    "drinks",
+    "coffee",
+    "sparkling water",
+    "water",
+    "juice",
+    "tea",
+    "soda",
+    "energy drinks",
+    "fruit juice",
+    "fruit punch juice",
+    "sports drinks",
+    "flavored water",
+    "mineral water",
+    "spring water",
+    "purified water",
+    "distilled water",
+    "bottled water",
+    "iced tea",
+    "lemonade",
+    "kombucha",
+    "probiotic drinks",
+    "plant-based milk",
+    "dairy-free milk",
+    "lactose-free milk",
+    "mocha",
+    "latte",
+    "espresso",
+    "iced coffee",
+    "coffee creamer",
+    "coffee syrup",
+    "hot chocolate",
+    "chocolate milk",
+    "smoothie",
+    "cola",
+    "diet soda",
+    "root beer",
+    "ginger ale",
+    "cream soda",
+    "tonic water",
+    "club soda",
+    "orange soda",
+    "grape soda",
+    "lemon-lime soda",
+    "fruit soda",
+    "berry soda",
+    "vanilla soda",
+    "cherry soda",
+    "sugar-free soda",
+    "sweet tea",
+    "bubble tea",
+    "milkshake",
+    "fruit flavor",
+    "milk drinks",
+    "milk beverages",
+    "fruit flavor sparkling water",
+    "fruit punch",
+    "dairy drinks",
+    "yogurt drink",
+    "non sweet tea",
+    "iced sweet tea",
+    "fruit punch soda",
+    "fruit punch juice",
+    "fruit punch flavor sparkling water",
+    "fruit flavor sparkling water",
+    "fruit flavor sparkling water with real fruit",
+    "fruit flavor sparkling water with natural flavors",
     "fruit flavor sparkling water with artificial flavors",
     "fruit flavor sparkling water with no added sugar",
     "fruit flavor sparkling water with no added calories",
@@ -108,7 +109,7 @@ product_queue = queue.Queue()
 seen_urls = set()
     
 
-def extract_product_info(product_url, id_list):
+def extract_product_info(product_url, id_list, cache):
     """_summary_
 
     Args:
@@ -148,10 +149,9 @@ def extract_product_info(product_url, id_list):
     reviews_data = initial_data.get("reviews", {})
     nutrition_data = initial_data['idml']
     
-    if product_data["upc"] in id_list:
-        return False
-    else:
-        id_list.append(product_data["upc"])
+    if product_data["upc"] in cache:
+        print("Product already in cache")
+        return cache[product_data["upc"]]
     
     product_info = {
         #product information, use product_data tag or other appropriate tag
@@ -168,6 +168,7 @@ def extract_product_info(product_url, id_list):
         "type": product_data.get("type", ""),
         "universal_product_code": product_data.get("upc", ""),
         "zip_code": product_data["location"].get("postalCode", ""),
+        "snap_eligible" : product_data.get("snapEligible", False),
     }
     
 
@@ -225,6 +226,7 @@ def extract_product_info(product_url, id_list):
     
     if(nutrition_data["ingredients"] != None):
         if(nutrition_data["ingredients"]["ingredients"] != None):
+            print("found ingredients")
             product_info["ingredients"] = nutrition_data["ingredients"]["ingredients"].get("value", "")
     else:
         product_info["ingredients"] = "not found"
@@ -240,6 +242,19 @@ def main():
     print("in main")
     OUTPUT_FILE = "product_info.jsonl"
     id_list = []
+    CACHE_FILE = "scraped_cache.jsonl"
+
+    if os.path.exists(CACHE_FILE):
+        cache = {}
+        with open(CACHE_FILE, 'r') as file:
+            for line in file:
+                item = json.loads(line)
+                cache[item['universal_product_code']] = item
+        print("cache loaded")
+    else:
+        cache = {}
+        print("cache created")
+
 
     with open(OUTPUT_FILE, 'w') as file:
         
@@ -262,7 +277,7 @@ def main():
                 while not product_queue.empty():
                     product_url = product_queue.get()
                     try:
-                        product_info = extract_product_info(product_url, id_list)
+                        product_info = extract_product_info(product_url, id_list, cache)
                         if product_info:
                             file.write(json.dumps(product_info)+"\n")
                     except Exception as e:
