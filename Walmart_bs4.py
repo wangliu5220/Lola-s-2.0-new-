@@ -24,79 +24,79 @@ HEADERS = {
     "accept": "application/json",
     "accept-language": "en-US",
     "accept-encoding": "gzip, deflate, br, zstd",
-    "referer": "https://www.walmart.com/",
+    "referer": "https://www.walmart.com/"
 
 }
 
 # List of search queries
 search_queries = [
-    "beverages",
-    "milk",
-    "drinks",
-    "coffee",
-    "sparkling water",
-    "water",
-    "juice",
-    "tea",
-    "soda",
-    "energy drinks",
-    "fruit juice",
-    "fruit punch juice",
-    "sports drinks",
-    "flavored water",
-    "mineral water",
-    "spring water",
-    "purified water",
-    "distilled water",
-    "bottled water",
-    "iced tea",
-    "lemonade",
-    "kombucha",
-    "probiotic drinks",
-    "plant-based milk",
-    "dairy-free milk",
-    "lactose-free milk",
-    "mocha",
-    "latte",
-    "espresso",
-    "iced coffee",
-    "coffee creamer",
-    "coffee syrup",
-    "hot chocolate",
-    "chocolate milk",
-    "smoothie",
-    "cola",
-    "diet soda",
-    "root beer",
-    "ginger ale",
-    "cream soda",
-    "tonic water",
-    "club soda",
-    "orange soda",
-    "grape soda",
-    "lemon-lime soda",
-    "fruit soda",
-    "berry soda",
-    "vanilla soda",
-    "cherry soda",
-    "sugar-free soda",
-    "sweet tea",
-    "bubble tea",
-    "milkshake",
-    "fruit flavor",
-    "milk drinks",
-    "milk beverages",
-    "fruit flavor sparkling water",
-    "fruit punch",
-    "dairy drinks",
-    "yogurt drink",
-    "non sweet tea",
-    "iced sweet tea",
-    "fruit punch soda",
-    "fruit punch juice",
-    "fruit punch flavor sparkling water",
-    "fruit flavor sparkling water",
-    "fruit flavor sparkling water with real fruit",
+    # "beverages",
+    # "milk",
+    # "drinks",
+    # "coffee",
+    # "sparkling water",
+    # "water",
+    # "juice",
+    # "tea",
+    # "soda",
+    # "energy drinks",
+    # "fruit juice",
+    # "fruit punch juice",
+    # "sports drinks",
+    # "flavored water",
+    # "mineral water",
+    # "spring water",
+    # "purified water",
+    # "distilled water",
+    # "bottled water",
+    # "iced tea",
+    # "lemonade",
+    # "kombucha",
+    # "probiotic drinks",
+    # "plant-based milk",
+    # "dairy-free milk",
+    # "lactose-free milk",
+    # "mocha",
+    # "latte",
+    # "espresso",
+    # "iced coffee",
+    # "coffee creamer",
+    # "coffee syrup",
+    # "hot chocolate",
+    # "chocolate milk",
+    # "smoothie",
+    # "cola",
+    # "diet soda",
+    # "root beer",
+    # "ginger ale",
+    # "cream soda",
+    # "tonic water",
+    # "club soda",
+    # "orange soda",
+    # "grape soda",
+    # "lemon-lime soda",
+    # "fruit soda",
+    # "berry soda",
+    # "vanilla soda",
+    # "cherry soda",
+    # "sugar-free soda",
+    # "sweet tea",
+    # "bubble tea",
+    # "milkshake",
+    # "fruit flavor",
+    # "milk drinks",
+    # "milk beverages",
+    # "fruit flavor sparkling water",
+    # "fruit punch",
+    # "dairy drinks",
+    # "yogurt drink",
+    # "non sweet tea",
+    # "iced sweet tea",
+    # "fruit punch soda",
+    # "fruit punch juice",
+    # "fruit punch flavor sparkling water",
+    # "fruit flavor sparkling water",
+    # "fruit flavor sparkling water with real fruit",
     "fruit flavor sparkling water with natural flavors",
     "fruit flavor sparkling water with artificial flavors",
     "fruit flavor sparkling water with no added sugar",
@@ -109,7 +109,7 @@ product_queue = queue.Queue()
 seen_urls = set()
     
 
-def extract_product_info(product_url, id_list, cache):
+def extract_product_info(product_url, cache):
     """_summary_
 
     Args:
@@ -136,6 +136,12 @@ def extract_product_info(product_url, id_list, cache):
     """
     print("in extract_product_info")
     
+    # if str(product_url) in cache:
+    if cache.get(product_url) != None:
+        print("Product already in cache")
+        return cache[product_url]
+    # have to manually add in new data to cache after program runs (been to lazy to write it into the code...)
+    
     response = requests.get(product_url, headers=HEADERS)
     print(response.status_code)
     soup = BeautifulSoup(response.text, "html.parser")
@@ -149,36 +155,50 @@ def extract_product_info(product_url, id_list, cache):
     reviews_data = initial_data.get("reviews", {})
     nutrition_data = initial_data['idml']
     
-    if product_data["upc"] in cache:
-        print("Product already in cache")
-        return cache[product_data["upc"]]
     
     product_info = {
         #product information, use product_data tag or other appropriate tag
+        "product_name": product_data["name"],
+        "snap_eligible" : product_data.get("snapEligible", False),
+        "short_description": product_data.get("shortDescription", ""),
         "price": product_data["priceInfo"]["currentPrice"]["price"],
+        "universal_product_code": product_data.get("upc", ""),
+        "product_URL" : product_url,    
+        "avg_rating": reviews_data.get("averageOverallRating", 0),
         "review_count": reviews_data.get("totalReviewCount", 0),
         "item_id": product_data["usItemId"],
-        "avg_rating": reviews_data.get("averageOverallRating", 0),
-        "product_name": product_data["name"],
         "brand": product_data.get("brand", ""),
         "availability": product_data["availabilityStatus"],
-        "image_url": product_data["imageInfo"]["thumbnailUrl"],
-        "all_image_urls": product_data["imageInfo"].get("allImages", []),
-        "short_description": product_data.get("shortDescription", ""),
         "type": product_data.get("type", ""),
-        "universal_product_code": product_data.get("upc", ""),
         "zip_code": product_data["location"].get("postalCode", ""),
-        "snap_eligible" : product_data.get("snapEligible", False),
+        
     }
     
-
     if(initial_data["seoItemMetaData"]!= None):
         if(initial_data["seoItemMetaData"]["breadCrumbs"] != None):
             i = 1
             for category in initial_data["seoItemMetaData"]["breadCrumbs"]:
                 product_info["dep/cat/shelf" + str(i)] = category["name"]
                 i += 1
+
     
+    #set default to "not found" in case there is no serving info
+    if(nutrition_data["nutritionFacts"]["servingInfo"] != None):
+        if(nutrition_data["nutritionFacts"]["servingInfo"]["values"] != None):
+            print("found serving info")
+            for serving_info in nutrition_data["nutritionFacts"]["servingInfo"]["values"]:
+                product_info[serving_info["name"]] = serving_info["value"]
+    else:
+        product_info["serving_information"] = "not found"
+        
+    #set default to "not found" in case there is no calories
+    if(nutrition_data["nutritionFacts"]["calorieInfo"] != None):
+        print("found calorie info")
+        product_info["calories"] = nutrition_data["nutritionFacts"]["calorieInfo"]["mainNutrient"]["amount"]
+    else:
+        product_info["calories"] = "not found"
+       
+
     # #set default to "not found" in case there are no main nutrients
     if(nutrition_data["nutritionFacts"]["keyNutrients"] != None):
         print("found key nutrients")
@@ -208,21 +228,6 @@ def extract_product_info(product_url, id_list, cache):
     else:
         product_info["vitamin_minerals"] = "not found"
         
-    #set default to "not found" in case there is no serving info
-    if(nutrition_data["nutritionFacts"]["servingInfo"] != None):
-        if(nutrition_data["nutritionFacts"]["servingInfo"]["values"] != None):
-            print("found serving info")
-            for serving_info in nutrition_data["nutritionFacts"]["servingInfo"]["values"]:
-                product_info[serving_info["name"]] = serving_info["value"]
-    else:
-        product_info["serving_information"] = "not found"
-       
-    #set default to "not found" in case there is no calories
-    if(nutrition_data["nutritionFacts"]["calorieInfo"] != None):
-        print("found calorie info")
-        product_info["calories"] = nutrition_data["nutritionFacts"]["calorieInfo"]["mainNutrient"]["amount"]
-    else:
-        product_info["calories"] = "not found"
     
     if(nutrition_data["ingredients"] != None):
         if(nutrition_data["ingredients"]["ingredients"] != None):
@@ -230,6 +235,13 @@ def extract_product_info(product_url, id_list, cache):
             product_info["ingredients"] = nutrition_data["ingredients"]["ingredients"].get("value", "")
     else:
         product_info["ingredients"] = "not found"
+        
+    if(product_data["imageInfo"] != None):
+        product_info["thumbnail_image_url"] = product_data["imageInfo"]["thumbnailUrl"]
+        i = 1
+        for image in product_data["imageInfo"]["allImages"]:
+            product_info["image_url_" + str(i)] = image["url"]
+            i += 1
            
     print("next product")
     
@@ -241,20 +253,19 @@ def extract_product_info(product_url, id_list, cache):
 def main():
     print("in main")
     OUTPUT_FILE = "product_info.jsonl"
-    id_list = []
-    CACHE_FILE = "scraped_cache.jsonl"
+    CACHE_FILE = "scraped_cache.jsonl" 
 
     if os.path.exists(CACHE_FILE):
         cache = {}
         with open(CACHE_FILE, 'r') as file:
             for line in file:
                 item = json.loads(line)
-                cache[item['universal_product_code']] = item
+                cache[item['product_URL']] = item
         print("cache loaded")
     else:
         cache = {}
         print("cache created")
-
+        
 
     with open(OUTPUT_FILE, 'w') as file:
         
@@ -277,7 +288,7 @@ def main():
                 while not product_queue.empty():
                     product_url = product_queue.get()
                     try:
-                        product_info = extract_product_info(product_url, id_list, cache)
+                        product_info = extract_product_info(product_url, cache)
                         if product_info:
                             file.write(json.dumps(product_info)+"\n")
                     except Exception as e:
