@@ -27,24 +27,15 @@ def generate_conversation_image(bedrock_client,
         response (JSON): The conversation that the model generated.
 
     """
-
     logger.info("Generating message with model %s", model_id)
-    image_exts = []
-    raw_images = []
-    # input_document_path = "AI_Image_Scrapping/Image_Data/Nutr_Data_Image_AI_scrape_real.xlsx"
-    
-    # Get image extensions and read in image as bytes
-    # for image in input_images:
-    #     # # Get image extension and read in image as bytes
+    # image_exts = []
+    # raw_images = []
+    # image extension and read in image as bytes
     image_ext = input_image.split(".")[-1]
     with open(input_image, "rb") as f:
         raw_image = f.read()
         print("image read")
 
-    # input_document_format = input_document_path.split(".")[-1]
-    # with open(input_document_path, 'rb') as input_document_file:
-    #     input_document = input_document_file.read()
-    
     message = {
         "role": "user",
         "content": [
@@ -61,7 +52,6 @@ def generate_conversation_image(bedrock_client,
             }
         ]
     }
-    
 
     messages = [message]
 
@@ -133,6 +123,71 @@ def generate_message_document(bedrock_client,
 
     return response
 
+def generate_json_image_conversation(bedrock_client,
+                          model_id,
+                          input_text,
+                          input_images,
+                          tool_list):
+    """
+    Sends a message to a model.
+    Args:
+        bedrock_client: The Boto3 Bedrock runtime client.
+        model_id (str): The model ID to use.
+        input text : The text prompt accompanying the image.
+        input_image : The path to the input image.
+
+    Returns:
+        response (JSON): The conversation that the model generated.
+
+    """
+    messages = []
+    
+        
+    message = {
+        "role": "user",
+        "content": [
+            {
+                "text": input_text
+            },
+            {
+                "text": "Please use the summarize_nutrition_info tool to identify and sort key nutrition information from the provided image into the requested categories only using the information form the image given."
+            },
+        ]
+    }
+        
+    for input_image in input_images:
+        image_ext = input_image.split(".")[-1]
+        with open(input_image, "rb") as f:
+            raw_image = f.read()
+            print("image read")
+        message['content'].append({
+            "image": {
+                "format": image_ext,
+                "source": {
+                    "bytes": raw_image
+                }
+            }
+        })
+            
+    messages = [message]
+    response = bedrock_client.converse(
+        modelId=model_id,
+        messages=messages,
+        inferenceConfig={
+            "maxTokens": 3000,
+            "temperature": 0
+        },
+        toolConfig={
+            "tools": tool_list,
+            "toolChoice": {
+                "tool": {
+                    "name": "summarize_nutrition_info"
+                }
+            }
+        }
+    )
+    return response
+
 
 def main():
 
@@ -141,8 +196,160 @@ def main():
 
     # model_id = "us.meta.llama3-2-11b-instruct-v1:0"
     model_id = "us.anthropic.claude-3-5-sonnet-20240620-v1:0"
-    
     tool_list = [
+        {
+        "toolSpec": {
+            "name": "summarize_nutrition_info",
+            "description": "Summarize nutrition and ingredient information.",
+            "inputSchema": {
+                "json": {
+                    "type": "object",
+                    "properties": {                        
+                        "servings_per_container": {
+                            "type": ["string", "null"],
+                            "description": "Number of servings in the container. If not found in the image it will be None"
+                        },
+                        "serving_size": {
+                            "type": ["string", "null"],
+                            "description": "The serving size of the product. If not found in the image it will be None"
+                        },
+                        "percent_juice": {
+                            "type": ["string", "null"],
+                            "description": "The percentage of juice in the product. If not found in the image it will be None"
+                        },
+                        "amount_per_serving": {
+                            "type": ["string", "null"],
+                            "description": "The amount of the product per serving. If not found in the image it will be None"
+                        },
+                        "calories": {
+                            "type": ["string", "null"],
+                            "description": "The number of calories in the product. If not found in the image it will be None"
+                        },
+                        "total_fat_absolute": {
+                            "type": ["string", "null"],
+                            "description": "The amount of total fat in the product in absolute terms. If not found in the image it will be None"
+                        },
+                        "total_fat_DV": {
+                            "type": ["string", "null"],
+                            "description": "The amount of total fat in the product as a percentage of the daily value. If not found in the image it will be None"
+                        },
+                        "sodium_absolute": {
+                            "type": ["string", "null"],
+                            "description": "The amount of sodium in the product in absolute terms. If not found in the image it will be None"
+                        },
+                        "sodium_DV": {
+                            "type": ["string", "null"],
+                            "description": "The amount of sodium in the product as a percentage of the daily value. If not found in the image it will be None"
+                        },
+                        "total_carbs_absolute": {
+                            "type": ["string", "null"],
+                            "description": "The amount of total carbs in the product in absolute terms. If not found in the image it will be None"
+                        },
+                        "total_carbs_DV": {
+                            "type": ["string", "null"],
+                            "description": "The amount of total carbs in the product as a percentage of the daily value. If not found in the image it will be None"
+                        },
+                        "total_sugars_absolute": {
+                            "type": ["string", "null"],
+                            "description": "The amount of total sugars in the product in absolute terms. If not found in the image it will be None"
+                        },
+                        "included_added_sugars_absolute": {
+                            "type": ["string", "null"],
+                            "description": "The amount of included added sugars in the product in absolute terms. If not found in the image it will be None"
+                        },
+                        "included_added_sugars_DV": {
+                            "type": ["string", "null"],
+                            "description": "The amount of included added sugars in the product as a percentage of the daily value. If not found in the image it will be None"
+                        },
+                        "protein_absolute": {
+                            "type": ["string", "null"],
+                            "description": "The amount of protein in the product in absolute terms. If not found in the image it will be None"
+                        },
+                        "protein_DV": {
+                            "type": ["string", "null"],
+                            "description": "The amount of protein in the product as a percentage of the daily value. If not found in the image it will be None"
+                        },
+                        "cholesterol_absolute": {
+                            "type": ["string", "null"],
+                            "description": "The amount of cholesterol in the product in absolute terms. If not found in the image it will be None"
+                        },
+                        "cholesterol_DV": {
+                            "type": ["string", "null"],
+                            "description": "The amount of cholesterol in the product as a percentage of the daily value. If not found in the image it will be None"
+                        },
+                        "saturated_fat_absolute": {
+                            "type": ["string", "null"],
+                            "description": "The amount of saturated fat in the product in absolute terms. If not found in the image it will be None"
+                        },
+                        "saturated_fat_DV": {
+                            "type": ["string", "null"],
+                            "description": "The amount of saturated fat in the product as a percentage of the daily value. If not found in the image it will be None"
+                        },
+                        "trans_fat_absolute": {
+                            "type": ["string", "null"],
+                            "description": "The amount of trans fat in the product in absolute terms. If not found in the image it will be None"
+                        },
+                        "trans_fat_DV": {
+                            "type": ["string", "null"],
+                            "description": "The amount of trans fat in the product as a percentage of the daily value. If not found in the image it will be None"
+                        },
+                        "fiber_absolute": {
+                            "type": ["string", "null"],
+                            "description": "The amount of fiber in the product in absolute terms. If not found in the image it will be None"
+                        },
+                        "fiber_DV": {
+                            "type": ["string", "null"],
+                            "description": "The amount of fiber in the product as a percentage of the daily value. If not found in the image it will be None"
+                        },
+                        "polyunsaturated_fat_absolute": {
+                            "type": ["string", "null"],
+                            "description": "The amount of polyunsaturated fat in the product in absolute terms. If not found in the image it will be None"
+                        },
+                        "monounsaturated_fat_absolute": {
+                            "type": ["string", "null"],
+                            "description": "The amount of monounsaturated fat in the product in absolute terms. If not found in the image it will be None"
+                        },
+                        "ingredients": {
+                            "type": "array",
+                            "description": "An array of product ingredients.",
+                            "items": { "type": "string" }
+                        },
+                        
+                    },
+                    "required": [
+                        "product_name",
+                        "servings_per_container",
+                        "serving_size",
+                        "percent_juice",
+                        "amount_per_serving",
+                        "calories",
+                        "total_fat_absolute",
+                        "total_fat_DV",
+                        "sodium_absolute",
+                        "sodium_DV",
+                        "total_carbs_absolute",
+                        "total_carbs_DV",
+                        "total_sugars_absolute",
+                        "included_added_sugars_absolute",
+                        "included_added_sugars_DV",
+                        "protein_absolute",
+                        "protein_DV",
+                        "cholesterol_absolute",
+                        "cholesterol_DV",
+                        "saturated_fat_absolute",
+                        "saturated_fat_DV",
+                        "trans_fat_absolute",
+                        "trans_fat_DV",
+                        "fiber_absolute",
+                        "fiber_DV",
+                        "polyunsaturated_fat_absolute",
+                        "monounsaturated_fat_absolute",
+                        "ingredients"
+                    ]
+                }
+            }
+        }
+        }
         
     ]
     
@@ -163,49 +370,29 @@ def main():
                         "Do not return any extra comments, information, or text not related to the categories listed."
                         "Return the nutrition information in json format as a dictionary. Please use brackets and braces for the json."
     )
-    input_images = [
-        # 'AI_Image_Scrapping\images\coke.png',
-        # 'AI_Image_Scrapping\images\diet_dp.webp',
-        # 'AI_Image_Scrapping\images\Milk.webp',
-        'AI_Image_Scrapping\images\choco_milk.webp',
-        # 'AI_Image_Scrapping\images\chobani.png',
-        # 'AI_Image_Scrapping\images\polar.png',
-        # 'AI_Image_Scrapping\images\kombucha.png',
-        # 'AI_Image_Scrapping\images\lemonade.webp',
-        # 'AI_Image_Scrapping\images/naked.webp',
-        # 'AI_Image_Scrapping\images\monster.webp',
-        # 'AI_Image_Scrapping\images/tazo.webp',
-        # 'AI_Image_Scrapping\images/vita.webp',
-        # 'AI_Image_Scrapping\images\jumex.webp',
-        # 'AI_Image_Scrapping\images\olipop.webp',
-        # 'AI_Image_Scrapping\images\carnation.webp',
-        # 'AI_Image_Scrapping\images/frap.webp',
-        # 'AI_Image_Scrapping\images\horizon.webp',
-        # 'AI_Image_Scrapping\images\mountain.webp',
-        # 'AI_Image_Scrapping\images\culture.webp',
-        # 'AI_Image_Scrapping\images/no_pulp.webp',
-        # 'AI_Image_Scrapping\images\ice.png',
-        # 'AI_Image_Scrapping\images\sanzo.webp',
-        # 'AI_Image_Scrapping\images\core.png',
-    ]
-    input_text_doc = ("Please obtain the nutrition information from this txt file of a beverage nutrition panel."
-                        "In the image find and sort the nutrition information into the following categories: "
-                        "Product Name, Servings per container, Serving Size , % Juice, Amount per serving, Calories, Total Fat (g), Total Fat (% DV), Sodium (mg), Sodium (% DV), Total Carbs (g), Total Carbs (% DV), Total Sugars (g), Includes added sugars (g), Includes Added Sugars (% DV), Protein (g), Protein (% DV), Cholesterol (mg), Cholesterol (% DV), Saturated Fat (g), Saturated Fat (% DV), Dietary Fiber (g), Dietary Fiber (% DV), Trans Fats (g), Trans fats (% DV), Polyunsaturated Fat (g), Monounsaturated Fat (g), and Ingredients"
-                        
-                        "Each of these categories should be its own key in a json dictionary. The daily value for a category should also be a distinct key."
-                        "Cholesterol will sometimes appear as 'Cholest.', which is the same thing."
-                        "Includes added sugars (g) will sometimes appear as 'Incl. (g) Added Sugars (% DV)', which is the same thing."
-                        "Saturated Fat will sometimes appear as 'Sat. Fat g (% DV)', which is the same thing."
-                        "Dietary Fiber will sometimes appear as 'Fiber g (% DV)', which is the same thing."
-                        "If there is no daily value for a category, still include it as a key but leave the value as 'Null'."
-                        "In the case that the category is not present, include the key but set the value as 'null'."
-                        "In the case of serving size, if there are units present, include them in the value and leave the key unchanged."
-                        "Do not include line breaks, foward slashes, or back slashes in the response."
-                        "Do not return any extra comments, information, or text not related to the categories listed."
-                        "Return the nutrition information in json format as a dictionary. Please use brackets and braces for the json."
-    )
-    input_doc = "AI_Image_Scrapping/rawText.txt"
+    # input_images = ['AI_Image_Scrapping\downloaded_images/464287973721\(4 pack) Jumex Mango Nectar from Concentrate, 11.3 Fl. oz._image_3.png',
+    #                 'AI_Image_Scrapping\downloaded_images\850017346024\Culture Pop Soda Watermelon, Probiotic Soda, 12 fl oz_image_2.png'
+        
+    # ]
+    input_images = {}
     
+    # input_text_doc = ("Please obtain the nutrition information from this txt file of a beverage nutrition panel."
+    #                     "In the image find and sort the nutrition information into the following categories: "
+    #                     "Product Name, Servings per container, Serving Size , % Juice, Amount per serving, Calories, Total Fat (g), Total Fat (% DV), Sodium (mg), Sodium (% DV), Total Carbs (g), Total Carbs (% DV), Total Sugars (g), Includes added sugars (g), Includes Added Sugars (% DV), Protein (g), Protein (% DV), Cholesterol (mg), Cholesterol (% DV), Saturated Fat (g), Saturated Fat (% DV), Dietary Fiber (g), Dietary Fiber (% DV), Trans Fats (g), Trans fats (% DV), Polyunsaturated Fat (g), Monounsaturated Fat (g), and Ingredients"
+                        
+    #                     "Each of these categories should be its own key in a json dictionary. The daily value for a category should also be a distinct key."
+    #                     "Cholesterol will sometimes appear as 'Cholest.', which is the same thing."
+    #                     "Includes added sugars (g) will sometimes appear as 'Incl. (g) Added Sugars (% DV)', which is the same thing."
+    #                     "Saturated Fat will sometimes appear as 'Sat. Fat g (% DV)', which is the same thing."
+    #                     "Dietary Fiber will sometimes appear as 'Fiber g (% DV)', which is the same thing."
+    #                     "If there is no daily value for a category, still include it as a key but leave the value as 'Null'."
+    #                     "In the case that the category is not present, include the key but set the value as 'null'."
+    #                     "In the case of serving size, if there are units present, include them in the value and leave the key unchanged."
+    #                     "Do not include line breaks, foward slashes, or back slashes in the response."
+    #                     "Do not return any extra comments, information, or text not related to the categories listed."
+    #                     "Return the nutrition information in json format as a dictionary. Please use brackets and braces for the json."
+    # )
+    # input_doc = "AI_Image_Scrapping/rawText.txt"
     
     
     try:
@@ -214,34 +401,50 @@ def main():
             service_name="bedrock-runtime",
             region_name="us-east-1"
             )
+        upc_dir = []
 
-        with open('AI_Image_Scrapping\AI_Response.jsonl', 'w') as f:
+        downloaded_images_dir = 'AI_Image_Scrapping/downloaded_images'
+        for root, dirs, files in os.walk(downloaded_images_dir):
+            upc_dir.extend(dirs)
             
-            response = generate_message_document(bedrock_client, model_id, input_text_image, input_doc) 
+            if root.split('\\')[-1] in upc_dir:
+                input_images[root.split('\\')[-1]] = [os.path.join(root, file) for file in files if file.endswith(".png")]
+        print(input_images)
+                    
+        with open('AI_Image_Scrapping\AI_Response.jsonl', 'w') as f:
+            f.write('[\n')
+            for upc in upc_dir:
+                response = generate_json_image_conversation(
+                    bedrock_client,
+                    model_id,
+                    input_text_image,
+                    input_images[upc],
+                    tool_list
+                )
+                response_message = response['output']['message']
 
-            # for i in range(len(input_images)):
-            #     response = generate_conversation_image(
-            #         bedrock_client, 
-            #         model_id, 
-            #         input_text_image,
-            #         input_images[i]
-            #         )
+                response_content_blocks = response_message['content']
 
-            output_message = response['output']['message']
-        
-            # Write the response to a json file
-            json.dump(output_message["content"], f, indent=4)
-                
-            print(f"Role: {output_message['role']}")
+                content_block = next((block for block in response_content_blocks if 'toolUse' in block), None)
 
-            for content in output_message['content']:
-                print(f"Text: {content['text']}")
+                tool_use_block = content_block['toolUse']
 
-            token_usage = response['usage']
-            print(f"Input tokens:  {token_usage['inputTokens']}")
-            print(f"Output tokens:  {token_usage['outputTokens']}")
-            print(f"Total tokens:  {token_usage['totalTokens']}")
-            print(f"Stop reason: {response['stopReason']}")
+                tool_result_dict = tool_use_block['input']
+                tool_result_dict['universal_product_code'] = upc
+                print(json.dumps(tool_result_dict, indent=4))
+                json.dump(tool_result_dict, f, indent=4)
+                if f.tell() > 0:
+                    f.write(',\n')
+            f.write('\n]')
+
+            # if response['output']['message']['contentType'] == "text/plain":
+            #     print(f"Generated text: {response['output']['message']['content']}")
+
+            #     token_usage = response['usage']
+            #     print(f"Input tokens:  {token_usage['inputTokens']}")
+            #     print(f"Output tokens:  {token_usage['outputTokens']}")
+            #     print(f"Total tokens:  {token_usage['totalTokens']}")
+            #     print(f"Stop reason: {response['stopReason']}")
 
     except ClientError as err:
         message = err.response['Error']['Message']
