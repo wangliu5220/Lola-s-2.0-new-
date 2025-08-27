@@ -2,7 +2,9 @@ from nutr_cleaner import DataCleaner
 import os
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
-file_path = os.path.join(current_dir, "merged_nutrition_information.xlsx")
+file_path = os.path.join(current_dir, "temp_storage_of_processed_sheets\merged_nutrition_information_8_18.xlsx")
+ultra_processed_path = os.path.join(current_dir, "ultraprocessed_ingredients.xlsx")
+ultra_p_sheet: DataCleaner = DataCleaner(ultra_processed_path)
 dc: DataCleaner = DataCleaner(file_path)
 
 percent_missing_calories = dc.calculate_missing_calorie("calories_x")
@@ -61,7 +63,10 @@ columns_to_merge = [
 ]
 dc.df['ingredients'] = dc.df[columns_to_merge].map(str).agg(', '.join, axis=1)
 dc.remove_text('ingredients', 'nan, ')
-
+dc.remove_text('ingredients', ', nan')
+dc.df['ingredients'] = dc.df['ingredients'].str.upper(
+    
+)
 dc.find_serving_info('serving_size')
 
 # Modifies the dataframe by added specific columns in requested order
@@ -94,6 +99,8 @@ dc.df = dc.df[[
     'monounsaturated_fat_absolute',
     'fiber_absolute',
     'fiber_DV',
+    'sodium_absolute',
+    'sodium_DV',
     'ingredients',
     'product_URL',
     'thumbnail_image_url',
@@ -116,6 +123,7 @@ dc.df = dc.df[[
     'avg_rating',
     'review_count'
 ]]
+dc.df.rename(columns = {'calories_y': 'calories'}, inplace = True)
 dc.df.rename(columns={'product_name_x': 'product_name'}, inplace=True)
 dc.apply_parse_product_name('product_name')
 
@@ -124,6 +132,42 @@ dc.df.rename(columns={'dep/cat/shelf1': 'department'}, inplace=True)
 dc.df.rename(columns={'dep/cat/shelf2': 'aisle'}, inplace=True)
 dc.df.rename(columns={'dep/cat/shelf3': 'shelf'}, inplace=True)
 
+# Standerdizing the serving size column
+dc.add_spacer('serving_size')
+dc.convert_fl_oz_to_ml('serving_size')
+dc.convert_cups_to_ml('serving_size')
+dc.convert_l_to_ml('serving_size')
+dc.convert_oz_to_g('serving_size')
+
+dc.add_spacer('calories')
+
+# Changing <UNKNOWN> vals to blanks
+dc.unknown_cleaner('serving_size')
+dc.unknown_cleaner('calories')
+dc.unknown_cleaner('total_sugars_absolute')
+dc.unknown_cleaner('price')
+dc.unknown_cleaner('sodium_absolute')
+dc.unknown_cleaner('saturated_fat_absolute')
+for col in dc.df.columns:
+    dc.unknown_cleaner(col)
+
+
+
+#start adding new per 100 columns 
+dc.call_nutr_per_100('serving_size', 'calories')
+dc.call_nutr_per_100('serving_size', 'total_sugars_absolute')
+dc.call_nutr_per_100('serving_size', 'sodium_absolute')
+dc.call_nutr_per_100('serving_size', 'saturated_fat_absolute')
+dc.call_nutr_per_100('serving_size', 'price')
+
+# Check ultraprocessed
+UPF_list = []
+
+ultra_p_sheet.to_list(UPF_list,['industrialised ingredient search terms','Alternative English Names','E/INS Numbers'])
+dc.flag_ultra_processed('ingredients', UPF_list)
+dc.preview()
+
+# Re-adding new columns and reordering
 dc.df = dc.df[[
     'department',
     'aisle',
@@ -136,7 +180,7 @@ dc.df = dc.df[[
     'unit_size',
     'pack_size',
     'percent_juice', 
-    'calories_y',
+    'calories',
     'total_fat_absolute',
     'total_fat_DV',
     'saturated_fat_absolute',
@@ -156,6 +200,13 @@ dc.df = dc.df[[
     'monounsaturated_fat_absolute',
     'fiber_absolute',
     'fiber_DV',
+    'sodium_absolute',
+    'sodium_DV',
+    'price_per_100',
+    'calories_per_100',
+    'total_sugars_absolute_per_100',
+    'sodium_absolute_per_100',
+    'saturated_fat_absolute_per_100',
     'ingredients',
     'product_URL',
     'thumbnail_image_url',
@@ -176,7 +227,7 @@ dc.df = dc.df[[
     'zip_code',
     'snap_eligible',
     'avg_rating',
-    'review_count'
+    'review_count',
+    'ultra_processed_flag',
 ]]
-print(dc.df['product_name'][2], dc.parse_product_name((dc.df['product_name'][2])))
 dc.save_data("Nutrition_Information_Processing\edited.xlsx")

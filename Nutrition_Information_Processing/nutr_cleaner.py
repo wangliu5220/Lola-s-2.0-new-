@@ -420,7 +420,7 @@ class DataCleaner:
         """
         # Convert list to lowercase for case-insensitive matching
         ultra_processed_set = set(
-            ingredient.lower() for ingredient in ultra_processed_ingredients
+            str(ingredient).lower() for ingredient in ultra_processed_ingredients
         )
 
         # Function to check if any ultra-processed ingredient is in the row's ingredient list
@@ -428,7 +428,7 @@ class DataCleaner:
             if pd.isna(ingredient_list):  # Handle NaN values
                 return 0
             ingredient_list = [
-                i.strip().lower() for i in ingredient_list.split(",")
+                str(i).strip().lower() for i in ingredient_list.split(",")
             ]  # Convert to lowercase list
             return (
                 1
@@ -443,8 +443,6 @@ class DataCleaner:
             check_ultra_processed
         )
         
-        self.df.to_excel('data/Cleaned_Product_List_1.xlsx', index=False)
-
     def flag_high_sugar(
         self,
         ingredients_column,
@@ -977,8 +975,51 @@ class DataCleaner:
         ).apply(lambda match: match.group(0).strip() if match else None)
 
     
-    def nutr_per_100(self, column):
-        self.df[column] = self.df[column].str.replace("%", "", regex=False)
+    def nutr_per_100(self, serving_size, nutr):
+        if serving_size == None or nutr == None or serving_size == "" or nutr == "" or pd.isna(serving_size) or pd.isna(nutr) or serving_size == "None" or nutr == "None":
+            return
+        else: 
+            # print(serving_size, nutr)
+            # print(float(re.search(r"\d+(?:\.\d+)?", serving_size).group(0).split()[0]))
+            per_100 = (float(re.search(r"\d+(?:\.\d+)?", nutr).group(0).split()[0])) / (float(re.search(r"\d+(?:\.\d+)?", serving_size).group(0).split()[0])) * 100
+            # print(per_100)
+            return per_100
+            
+            
+    def call_nutr_per_100(self, serving_size, nutr):
+        """
+        Calculates the amount of a nutrient per 100g/ml or 100g/g or per 100g/mg and adds the result as a new column.
+
+        Parameters:
+        serving_size (str): The column name of the serving size.
+        nutr (str): The column name of the nutrient.
+
+        Returns:
+        None
+        """
+        
+        self.df[nutr + "_per_100"] = self.df.apply(
+            lambda row: self.nutr_per_100(row[serving_size], row[nutr]),
+            axis=1
+        )
         return
+    
+    def add_spacer(self, column):
+        self.df[column] = self.df[column].apply(
+            lambda x: re.sub(r"(\d)([a-zA-Z])", r"\1 \2", str(x))
+        )
+    
+    def unknown_cleaner(self, column):
+        self.df[column] = self.df[column].apply(
+            lambda x: re.sub(r"<UNKNOWN>|nan", "", str(x)))
+        return
+        
+    def to_list(self,list, columns):
+        for column in columns:
+            for item in self.df[column]:
+                if pd.isna(item) == False:
+                    list.append(item)
+        return list
+    
     
     
