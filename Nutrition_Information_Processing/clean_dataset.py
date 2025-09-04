@@ -145,12 +145,12 @@ dc.add_spacer('calories')
 dc.unknown_cleaner('serving_size')
 dc.unknown_cleaner('calories')
 dc.unknown_cleaner('total_sugars_absolute')
+dc.unknown_cleaner('included_added_sugars_absolute')
 dc.unknown_cleaner('price')
 dc.unknown_cleaner('sodium_absolute')
 dc.unknown_cleaner('saturated_fat_absolute')
 for col in dc.df.columns:
     dc.unknown_cleaner(col)
-
 
 
 #start adding new per 100 columns 
@@ -159,6 +159,7 @@ dc.call_nutr_per_100('serving_size', 'total_sugars_absolute')
 dc.call_nutr_per_100('serving_size', 'sodium_absolute')
 dc.call_nutr_per_100('serving_size', 'saturated_fat_absolute')
 dc.call_nutr_per_100('serving_size', 'price')
+dc.call_nutr_per_100('serving_size', 'included_added_sugars_absolute')
 
 # Check ultraprocessed
 UPF_list = []
@@ -205,6 +206,7 @@ dc.df = dc.df[[
     'price_per_100',
     'calories_per_100',
     'total_sugars_absolute_per_100',
+    'included_added_sugars_absolute_per_100',
     'sodium_absolute_per_100',
     'saturated_fat_absolute_per_100',
     'ingredients',

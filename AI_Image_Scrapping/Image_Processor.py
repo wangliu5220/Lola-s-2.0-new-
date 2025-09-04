@@ -370,13 +370,10 @@ def main():
                         "Do not return any extra comments, information, or text not related to the categories listed."
                         "Return the nutrition information in json format as a dictionary. Please use brackets and braces for the json."
     )
-    # input_images = ['AI_Image_Scrapping\downloaded_images/464287973721\(4 pack) Jumex Mango Nectar from Concentrate, 11.3 Fl. oz._image_3.png',
-    #                 'AI_Image_Scrapping\downloaded_images\850017346024\Culture Pop Soda Watermelon, Probiotic Soda, 12 fl oz_image_2.png'
-        
-    # ]
+    
     input_images = {}
     
-    # input_text_doc = ("Please obtain the nutrition information from this txt file of a beverage nutrition panel."
+    """# input_text_doc = ("Please obtain the nutrition information from this txt file of a beverage nutrition panel."
     #                     "In the image find and sort the nutrition information into the following categories: "
     #                     "Product Name, Servings per container, Serving Size , % Juice, Amount per serving, Calories, Total Fat (g), Total Fat (% DV), Sodium (mg), Sodium (% DV), Total Carbs (g), Total Carbs (% DV), Total Sugars (g), Includes added sugars (g), Includes Added Sugars (% DV), Protein (g), Protein (% DV), Cholesterol (mg), Cholesterol (% DV), Saturated Fat (g), Saturated Fat (% DV), Dietary Fiber (g), Dietary Fiber (% DV), Trans Fats (g), Trans fats (% DV), Polyunsaturated Fat (g), Monounsaturated Fat (g), and Ingredients"
                         
@@ -392,7 +389,7 @@ def main():
     #                     "Do not return any extra comments, information, or text not related to the categories listed."
     #                     "Return the nutrition information in json format as a dictionary. Please use brackets and braces for the json."
     # )
-    # input_doc = "AI_Image_Scrapping/rawText.txt"
+    # input_doc = "AI_Image_Scrapping/rawText.txt"""
     
     
     try:
