@@ -918,18 +918,7 @@ class DataCleaner:
             r"(/d+)\s*drinks",          # "2 drinks"
             r"(\d+)\s*pk",              # "2 pk
         ]
-        # package_patterns = [
-        #     r"(\d+(?:\.\d+)?\s*(?:fl oz|oz|liter|litre|l|ml))(?:\s*,?\s*(\d+\s*pack)?)?", # "12 fl oz, 12 pack"
-        #     r"(\d+(?:\.\d+)?\s*x\s*(?:fl oz|oz|liter|litre|l|ml))\s*\((?:pack\s*of\s*)?\d+\)", # "12 fl oz (pack of 12)"
-        #     r"(\d+(?:\.\d+)?\s*(?:fl oz|oz|liter|litre|l|ml)),?\s*(pack\s*of\s*)?\d+", # "12.0 fl oz, pack of 12"
-        #     r"(\d+(?:\.\d+)?\s*pack)", # "12 pack"
-        #     r"(\d+(?:\.\d+)?\s*(?:fl oz|oz|liter|litre|l|ml)),?\s*(\d+-pack)", # "11.2 oz, 3-pack"
-        #     r"(\d+(?:\.\d+)?\s*Fluid Ounces)", # "12 Fluid Ounces"
-        #     r"(\d+\s*Pack\s*-\s*\d+(?:\.\d+)?\s*(?:fl oz|oz|liter|litre|l|ml))", # "8 Pack - 16 OZ"
-        #     r"(\d+(?:\.\d+)?\s*-\s*\d+(?:\.\d+)?\s*(?:fl oz|oz|liter|litre|l|ml))", # "12- 16 fl oz"
-        #     r"(\d+(?:\.\d+)?\s*(?:fl oz|oz|liter|litre|l|ml))\s*x\s*\d+\s*(?:bottles?)" # "2.0 fl oz x 2 bottles"
-        #     r"(\d+(?:\.\d+)?\s*(?:fl oz|oz|liter|litre|l|ml))\s*Cans?,?\s*(\d+\s*pk)", # "12 oz Cans, 12 pk"
-        # ]
+        
         unit_patterns = [
             r"(\d+(\.\d+)?)\s*(fl oz|oz|liter|litre|l|ml)",
         ]
