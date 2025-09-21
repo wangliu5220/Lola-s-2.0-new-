@@ -10,7 +10,10 @@ Here is a quick start-up guide assuming you have access to an already set up IAM
 2. After downloading, open a terminal and type 'aws configure' and enter the following information 
 
    a.    AWS access key ID
+   
    b.    AWS secret access key
+   
    c.    Default region name: us-east-1
+   
    d.    Output format: just press enter to skip
 
