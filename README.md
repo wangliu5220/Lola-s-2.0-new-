@@ -33,5 +33,5 @@ You need to install these libraries:
 4. boto3
 5. Maybe botocore (forgot if this comes with the boto3 library)
 
-For library, type this into the terminal "pip install [name of library]"
+For each library above, type this into the terminal "pip install [name of library]"
 If you want feel free to switch into a virtual environment, if you need help let me know. 
