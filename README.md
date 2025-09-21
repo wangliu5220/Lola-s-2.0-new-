@@ -17,3 +17,7 @@ Here is a quick start-up guide assuming you have access to an already set up IAM
    
    d.    Output format: just press enter to skip
 
+   
+3. Restart VSCode if using VSCode (if need be restart computer as well)
+
+You should now be able to send Bedrock API calls without having to add the API key into your code
