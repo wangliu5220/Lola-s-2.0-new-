@@ -1,4 +1,4 @@
-**Startup Guide For Setting Up Bedrock API **
+**Startup Guide For Setting Up Bedrock API**
 
 
 To run the AI functionality on your local machine, you need to first get access to AWS credentials.
