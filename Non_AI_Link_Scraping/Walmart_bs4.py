@@ -174,6 +174,7 @@ def extract_product_info(product_url, cache):
         
     }
     
+    # department, aisle, shelf
     if(initial_data["seoItemMetaData"]!= None):
         if(initial_data["seoItemMetaData"]["breadCrumbs"] != None):
             i = 1

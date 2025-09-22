@@ -1,3 +1,9 @@
+## Simple web scraper. Uses the walmart link and sends a get request. 
+# Then uses beautiful soup to parse the html.The BS4 is then parsed to find the script tag with the id __NEXT_DATA__. 
+# The string content of this tag is then loaded as a json object and printed out to the file location path in the code
+# This json has all the relevant data about the product. 
+
+
 import requests
 from bs4 import BeautifulSoup
 import json

@@ -6,6 +6,25 @@ import json
 import os
 import base64
 import pandas as pd
+import requests
+
+
+def download_image(image_url):
+    """_summary_
+
+    Args:
+        image_url (string): Url link to image
+
+    Returns:
+        Not sure but I think its a byte value of some sort: if you save the return as a png or jpeg it should work, prob shouldv'e looked into this lol
+    """
+    try:
+        response = requests.get(image_url)
+        response.raise_for_status()  # Raise an error for bad responses
+        return response
+    except requests.exceptions.RequestException as e:
+        print(f"Failed to download image: {e}")
+
 
 def generate_message_document(bedrock_client,
                      model_id,
@@ -309,11 +328,20 @@ def main():
                 # print(json.dumps(tool_result_dict, indent=4))
                 print_dict_response(tool_result_dict)
                 json.dump(tool_result_dict, f, indent=4)
-
+                
+            # i = 1
+            # for key, value in tool_result_dict.items():
+            #     if "UPC" in key:
+            #         print(f"Sending {value} to get image method")
+            #         image  = download_image(f"https://www.barcodelookup.com/{i}")
+            #         save_path = f"AI Reccomendation/First Four Images/{value}.jpg"
+            #         with open(save_path, 'wb') as f:
+            #             f.write(image.content)
+            #         i += 1
         except ClientError as e:
             print("Client Error: " +e.response['Error']['Message'])
         
-        product_name_input = input("Please enter new search term: ")
+        product_name_input = input("\nPlease enter new search term: ")
     return
 
 
