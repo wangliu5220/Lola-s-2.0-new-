@@ -1,0 +1,26 @@
+import os
+import json
+import logging
+import requests
+from io import BytesIO
+from PIL import Image
+import pytesseract
+import boto3
+from botocore.exceptions import ClientError
+import io
+
+if __name__ == "__main__":
+    response = requests.get( "" \
+    "https://i5.walmartimages.com/asr/6d5b3187-1a6e-496b-a7b8-73900f4f1b08.b9b99e50be90c916e63e742982b6c173.jpeg" \
+    "", timeout=10)
+    img = Image.open(BytesIO(response.content))
+
+    # Handle transparency and unify mode
+    if img.mode == "P" and "transparency" in img.info:
+        img = img.convert("RGBA")
+    else:
+        img = img.convert("RGB")
+
+    # OCR on original
+    text = pytesseract.image_to_string(img).lower()
+    print(text)

@@ -1,9 +1,11 @@
 import requests
 from bs4 import BeautifulSoup
+import os
 
 
 BASE_URL = "https://www.walmart.com"
-OUTPUT_FILE = "product_info.jsonl"
+OUTPUT_FILE = OUTPUT_FILE = os.path.join(os.getcwd(), "henry_test.jsonl")
+
 
 # Fake browser-like headers
 BASE_HEADERS = {

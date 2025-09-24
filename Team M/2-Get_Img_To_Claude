@@ -1,0 +1,344 @@
+import os
+import json
+import logging
+import requests
+from io import BytesIO
+from PIL import Image
+import pytesseract
+import boto3
+from botocore.exceptions import ClientError
+import io
+
+# -------------------
+# Logging
+# -------------------
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
+CACHE_FILE = "Team M/AI_Response/cache.json"
+if os.path.exists(CACHE_FILE):
+    with open(CACHE_FILE, "r", encoding="utf-8") as f:
+        CACHE = json.load(f)
+else:
+    CACHE = {}
+
+def contains_nutrition_info(text):
+    keywords = [
+        "nutrition", "calories", "serving size", "saturated",
+        "amount/serving", "amount per serving", "total fat",
+        "sodium", "daily value", "total carbohydrate"
+    ]
+    return any(k in text.lower() for k in keywords)
+
+# -------------------
+# Load JSONL Products
+# -------------------
+def load_products(jsonl_path):
+    with open(jsonl_path, "r", encoding="utf-8") as f:
+        for line in f:
+            yield json.loads(line.strip())
+
+MAX_SIZE = 5 * 1024 * 1024  # 5 MB
+
+def ocr_and_preprocess(image_url):
+    try:
+        response = requests.get(image_url, timeout=10)
+        img = Image.open(BytesIO(response.content))
+
+        if img.mode == "P" and "transparency" in img.info:
+            img = img.convert("RGBA")
+        else:
+            img = img.convert("RGB")
+
+        text = pytesseract.image_to_string(img).lower()
+        img_bw = img.convert("L")
+
+        buffer = io.BytesIO()
+        quality = 95
+        img_bw.save(buffer, format="JPEG", quality=quality)
+        while buffer.tell() > MAX_SIZE and quality > 10:
+            buffer = io.BytesIO()
+            quality -= 10
+            img_bw.save(buffer, format="JPEG", quality=quality)
+        buffer.seek(0)
+    
+        return text, Image.open(buffer)
+
+    except Exception as e:
+        print(f"OCR failed for {image_url}: {e}")
+        return "", None
+
+# -------------------
+# AWS Bedrock Functions
+# -------------------
+def generate_json_image_conversation(bedrock_client, model_id, input_text, input_images, tool_list):
+    messages = [{
+        "role": "user",
+        "content": [
+            {"text": input_text},
+            {"text": "Please use the summarize_nutrition_info tool to extract nutrition information from the image in JSON format."}
+        ]
+    }]
+    for img in input_images:
+        buffered = BytesIO()
+        img.save(buffered, format="PNG")
+        raw_image = buffered.getvalue()
+        messages[0]['content'].append({
+            "image": {"format": "png", "source": {"bytes": raw_image}}
+        })
+
+    response = bedrock_client.converse(
+        modelId=model_id,
+        messages=messages,
+        inferenceConfig={"maxTokens": 3000, "temperature": 0},
+        toolConfig={
+            "tools": tool_list,
+            "toolChoice": {"tool": {"name": "summarize_nutrition_info"}}
+        }
+    )
+    return response
+
+def process_product(product, bedrock_client, model_id, tool_list, input_text_image):
+    upc = product.get("universal_product_code")
+    if not upc:
+        print("No UPC found, skipping product")
+        return None
+
+    # Check global cache first
+    if upc in CACHE:
+        print(f".             Using cached nutrition info for UPC {upc}")
+        return CACHE[upc]
+
+    images = [v for k, v in product.items() if k.startswith("image_url")]
+    candidate_images = []
+
+    for url in images:
+        ocr_text, processed_img = ocr_and_preprocess(url)
+        if contains_nutrition_info(ocr_text) and processed_img:
+            print(".             found nutrition information in " + str(url))
+            candidate_images.append(processed_img)
+
+    if candidate_images:
+        print(".               sending product to claude")
+        response = generate_json_image_conversation(
+            bedrock_client,
+            model_id,
+            input_text_image,
+            candidate_images,
+            tool_list
+        )
+        try:
+            content_blocks = response['output']['message']['content']
+            content_block = next((b for b in content_blocks if 'toolUse' in b), None)
+            if content_block:
+                nutrition_info = content_block['toolUse']['input']
+                nutrition_info['universal_product_code'] = upc
+                CACHE[upc] = nutrition_info  # store in global cache
+                # save cache immediately
+                with open(CACHE_FILE, "w", encoding="utf-8") as f:
+                    json.dump(CACHE, f)
+                return nutrition_info
+        except Exception as e:
+            print(f"    Error parsing Bedrock response for UPC {upc}: {e}")
+            return None
+    else:
+        print(f"UPC {upc}: No nutrition panel detected.")
+        return None
+
+def merge_nutrition(original_product, nutrition_dict):
+    cleaned_product = {
+        k: v for k, v in original_product.items()
+        if k in ["product_name", "snap_eligible", "universal_product_code", "price", "product_URL"]
+    }
+    cleaned_product["Nutrition_facts"] = nutrition_dict
+    return cleaned_product
+
+# -------------------
+# Main Pipeline
+# -------------------
+def main():
+    jsonl_path = "Team M/result_from_1.jsonl"
+    output_path = "Team M/AI_Response.jsonl"
+    model_id = "us.anthropic.claude-3-5-sonnet-20240620-v1:0"
+
+    input_text_image = (
+        "Please obtain the nutrition information from these images. "
+        "Return the nutrition information in JSON format only using the image content."
+    )
+
+    
+# Define the Claude tool
+    tool_list = [
+        {
+        "toolSpec": {
+            "name": "summarize_nutrition_info",
+            "description": "Summarize nutrition and ingredient information.",
+            "inputSchema": {
+                "json": {
+                    "type": "object",
+                    "properties": {                        
+                        "servings_per_container": {
+                            "type": ["string", "null"],
+                            "description": "Number of servings in the container. If not found in the image it will be None"
+                        },
+                        "serving_size": {
+                            "type": ["string", "null"],
+                            "description": "The serving size of the product. If not found in the image it will be None"
+                        },
+                        "percent_juice": {
+                            "type": ["string", "null"],
+                            "description": "The percentage of juice in the product. If not found in the image it will be None"
+                        },
+                        "amount_per_serving": {
+                            "type": ["string", "null"],
+                            "description": "The amount of the product per serving. If not found in the image it will be None"
+                        },
+                        "calories": {
+                            "type": ["string", "null"],
+                            "description": "The number of calories in the product. If not found in the image it will be None"
+                        },
+                        "total_fat_absolute": {
+                            "type": ["string", "null"],
+                            "description": "The amount of total fat in the product in absolute terms. If not found in the image it will be None"
+                        },
+                        "total_fat_DV": {
+                            "type": ["string", "null"],
+                            "description": "The amount of total fat in the product as a percentage of the daily value. If not found in the image it will be None"
+                        },
+                        "sodium_absolute": {
+                            "type": ["string", "null"],
+                            "description": "The amount of sodium in the product in absolute terms. If not found in the image it will be None"
+                        },
+                        "sodium_DV": {
+                            "type": ["string", "null"],
+                            "description": "The amount of sodium in the product as a percentage of the daily value. If not found in the image it will be None"
+                        },
+                        "total_carbs_absolute": {
+                            "type": ["string", "null"],
+                            "description": "The amount of total carbs in the product in absolute terms. If not found in the image it will be None"
+                        },
+                        "total_carbs_DV": {
+                            "type": ["string", "null"],
+                            "description": "The amount of total carbs in the product as a percentage of the daily value. If not found in the image it will be None"
+                        },
+                        "total_sugars_absolute": {
+                            "type": ["string", "null"],
+                            "description": "The amount of total sugars in the product in absolute terms. If not found in the image it will be None"
+                        },
+                        "included_added_sugars_absolute": {
+                            "type": ["string", "null"],
+                            "description": "The amount of included added sugars in the product in absolute terms. If not found in the image it will be None"
+                        },
+                        "included_added_sugars_DV": {
+                            "type": ["string", "null"],
+                            "description": "The amount of included added sugars in the product as a percentage of the daily value. If not found in the image it will be None"
+                        },
+                        "protein_absolute": {
+                            "type": ["string", "null"],
+                            "description": "The amount of protein in the product in absolute terms. If not found in the image it will be None"
+                        },
+                        "protein_DV": {
+                            "type": ["string", "null"],
+                            "description": "The amount of protein in the product as a percentage of the daily value. If not found in the image it will be None"
+                        },
+                        "cholesterol_absolute": {
+                            "type": ["string", "null"],
+                            "description": "The amount of cholesterol in the product in absolute terms. If not found in the image it will be None"
+                        },
+                        "cholesterol_DV": {
+                            "type": ["string", "null"],
+                            "description": "The amount of cholesterol in the product as a percentage of the daily value. If not found in the image it will be None"
+                        },
+                        "saturated_fat_absolute": {
+                            "type": ["string", "null"],
+                            "description": "The amount of saturated fat in the product in absolute terms. If not found in the image it will be None"
+                        },
+                        "saturated_fat_DV": {
+                            "type": ["string", "null"],
+                            "description": "The amount of saturated fat in the product as a percentage of the daily value. If not found in the image it will be None"
+                        },
+                        "trans_fat_absolute": {
+                            "type": ["string", "null"],
+                            "description": "The amount of trans fat in the product in absolute terms. If not found in the image it will be None"
+                        },
+                        "trans_fat_DV": {
+                            "type": ["string", "null"],
+                            "description": "The amount of trans fat in the product as a percentage of the daily value. If not found in the image it will be None"
+                        },
+                        "fiber_absolute": {
+                            "type": ["string", "null"],
+                            "description": "The amount of fiber in the product in absolute terms. If not found in the image it will be None"
+                        },
+                        "fiber_DV": {
+                            "type": ["string", "null"],
+                            "description": "The amount of fiber in the product as a percentage of the daily value. If not found in the image it will be None"
+                        },
+                        "polyunsaturated_fat_absolute": {
+                            "type": ["string", "null"],
+                            "description": "The amount of polyunsaturated fat in the product in absolute terms. If not found in the image it will be None"
+                        },
+                        "monounsaturated_fat_absolute": {
+                            "type": ["string", "null"],
+                            "description": "The amount of monounsaturated fat in the product in absolute terms. If not found in the image it will be None"
+                        },
+                        "ingredients": {
+                            "type": "array",
+                            "description": "An array of product ingredients.",
+                            "items": { "type": "string" }
+                        },
+                        
+                    },
+                    "required": [
+                        "servings_per_container",
+                        "serving_size",
+                        "percent_juice",
+                        "amount_per_serving",
+                        "calories",
+                        "total_fat_absolute",
+                        "total_fat_DV",
+                        "sodium_absolute",
+                        "sodium_DV",
+                        "total_carbs_absolute",
+                        "total_carbs_DV",
+                        "total_sugars_absolute",
+                        "included_added_sugars_absolute",
+                        "included_added_sugars_DV",
+                        "protein_absolute",
+                        "protein_DV",
+                        "cholesterol_absolute",
+                        "cholesterol_DV",
+                        "saturated_fat_absolute",
+                        "saturated_fat_DV",
+                        "trans_fat_absolute",
+                        "trans_fat_DV",
+                        "fiber_absolute",
+                        "fiber_DV",
+                        "polyunsaturated_fat_absolute",
+                        "monounsaturated_fat_absolute",
+                        "ingredients"
+                    ]
+                }
+            }
+        }
+        }
+    ]
+
+    try:
+        bedrock_client = boto3.client("bedrock-runtime", region_name="us-east-1")
+        # append mode, don't overwrite AI_Response
+        with open(output_path, "a", encoding="utf-8") as fout:
+            for product in load_products(jsonl_path):
+                print("Product: " + str(product.get("product_name")))
+                nutrition_info = process_product(product, bedrock_client, model_id, tool_list, input_text_image)
+                if nutrition_info:
+                    final_product = merge_nutrition(product, nutrition_info)
+                    fout.write(json.dumps(final_product) + "\n")
+
+    except ClientError as err:
+        logger.error("AWS Bedrock ClientError: %s", err.response['Error']['Message'])
+
+    print("Finished processing all products.")
+
+if __name__ == "__main__":
+    main()
+
