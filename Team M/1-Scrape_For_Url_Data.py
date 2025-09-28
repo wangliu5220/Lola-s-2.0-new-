@@ -166,8 +166,8 @@ def processFromUrls( SCRAPE_LIMIT=100):
     "https://www.walmart.com/ip/Sanzo-Lychee-Sparkling-Water-12-Cans-Made-with-Real-Fruit-No-Added-Sugar-Carbonated-Water-Flavored/9247067342?adsRedirect=true",
     "https://www.walmart.com/ip/Core-Power-Protein-Shake-with-26g-Protein-by-fairlife-Milk-Vanilla-14-fl-oz/822766999?classType=VARIANT&athbdg=L1102&from=/search"
     ]
-    OUTPUT_FILE="Team M/result_from_1.jsonl"
-    CACHE_FILE="Team M/henry_cache.jsonl"
+    OUTPUT_FILE="Team M/test_folder/result_from_1.jsonl"
+    CACHE_FILE="Team M/test_folder/cache_part_1.jsonl"
     # Load cache
     cache = {}
     if os.path.exists(CACHE_FILE):
@@ -218,8 +218,8 @@ def processFromUrls( SCRAPE_LIMIT=100):
 
 def main():
     OUTPUT_FILE = "Team M/result_from_1.jsonl"
-    CACHE_FILE = "Team M/henry_cache.jsonl"
-    SCRAPE_LIMIT = 15  # Adjust as needed
+    CACHE_FILE = "Team M/cache_part_1.jsonl"
+    SCRAPE_LIMIT = 20  # Adjust as needed
 
     # Load cache
     cache = {}
@@ -281,3 +281,4 @@ def main():
 
 if __name__ == "__main__":
     processFromUrls()
+    # main()

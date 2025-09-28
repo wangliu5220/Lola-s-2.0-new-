@@ -17,7 +17,7 @@ def extract_number(value):
 # Load files
 # -------------------
 excel_path = "Team M/test_folder/test set.xlsx"
-jsonl_path = "Team M/AI_Response.jsonl"
+jsonl_path = "Team M/test_folder/AI_Response.jsonl"
 
 df = pd.read_excel(excel_path)
 with open(jsonl_path, "r", encoding="utf-8") as f:
