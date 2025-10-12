@@ -8,7 +8,7 @@ import requests
 from bs4 import BeautifulSoup
 import json
 
-walmart_url = "https://www.walmart.com/ip/Caribou-Coffee-Caramel-Hideaway-Flavored-Premium-Medium-Roast-Ground-Coffee-Arabica-11-oz/49679218?classType=VARIANT&from=/search"
+walmart_url = "https://www.walmart.com/ip/Steak-Eze-CAB-Brand-Steak-EZE-Breakaway-Sirloin-Philly-Steak-6-Ounce-27-per-Case/1978233773?classType=REGULAR&from=/search"
 
 
 
@@ -33,5 +33,5 @@ script_tag = soup.find("script", id="__NEXT_DATA__")
 data = json.loads(script_tag.string)
 
 with open('rand_data.json', 'w') as f:
-    json.dump(data, f, indent=4)
+    json.dump(data['props']['pageProps']['initialData']['data']['product']['upc'], f, indent=4)
 
