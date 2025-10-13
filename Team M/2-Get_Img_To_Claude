@@ -43,11 +43,17 @@ CACHE = load_cache()
 
 
 def contains_nutrition_info(text):
-    keywords = [
-        "nutrition", "calories", "serving size", "saturated",
-        "amount/serving", "amount per serving", "total fat",
-        "sodium", "daily value", "total carbohydrate"
-    ]
+    keywords = ["total carbohydrate",
+                "includes added sugars", 
+                "total sugars", 
+                "saturated fat", 
+                "polyunsaturated fat",
+                "monounsaturated fat", 
+                "cholesterol", 
+                "calcium", 
+                "iron",
+                "potassium"
+                ]
     return any(k in text.lower() for k in keywords)
 
 # -------------------
@@ -130,11 +136,20 @@ def process_product(product, bedrock_client, model_id, tool_list, input_text_ima
     images = [v for k, v in product.items() if k.startswith("image_url")]
     candidate_images = []
 
+    # Check for nutrition panels
     for img_url in images:
         ocr_text, processed_img = ocr_and_preprocess(img_url)
         if contains_nutrition_info(ocr_text) and processed_img:
             print(".             found nutrition information in " + str(img_url))
             candidate_images.append(processed_img)
+
+    # Fallback: if no nutrition panel found, use all processed images
+    if not candidate_images:
+        print(f"{url}: No nutrition panel detected. Using all available images instead.")
+        for img_url in images:
+            _, processed_img = ocr_and_preprocess(img_url)
+            if processed_img:
+                candidate_images.append(processed_img)
 
     if candidate_images:
         print(".               sending product to claude")
@@ -156,9 +171,9 @@ def process_product(product, bedrock_client, model_id, tool_list, input_text_ima
         except Exception as e:
             print(f"    Error parsing Bedrock response for {url}: {e}")
             return None
-    else:
-        print(f"{url}: No nutrition panel detected.")
-        return None
+
+    # If we reach here, no usable images
+    return None
 
 def merge_nutrition(original_product, nutrition_dict):
     cleaned_product = {
@@ -357,6 +372,6 @@ if __name__ == "__main__":
     test_jsonl_path = "Team M/test_folder/result_from_1.jsonl"
     test_output_path = "Team M/test_folder/AI_Response.jsonl"
     
-    # main(jsonl_path, output_path)
-    main(test_jsonl_path, test_output_path)
+    main(jsonl_path, output_path)
+    # main(test_jsonl_path, test_output_path)
 
