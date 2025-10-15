@@ -208,17 +208,14 @@ def merge_nutrition(original_product, nutrition_dict):
     cleaned_product["Nutrition_facts"] = nutrition_dict
     return cleaned_product
 
-# -------------------
-# Main Pipeline
-# -------------------
-def main(jsonl_path, output_path):
+def main(jsonl_path, output_path, failed_path="failed_images.txt"):
     model_id = "us.anthropic.claude-3-5-sonnet-20240620-v1:0"
 
     input_text_image = (
         "Please obtain the nutrition information from these images. "
         "Return the nutrition information in JSON format only using the image content."
     )
-    
+
 # Define the Claude tool
     tool_list = [
         {
@@ -375,20 +372,57 @@ def main(jsonl_path, output_path):
         }
     ]
 
-    try:
-        bedrock_client = boto3.client("bedrock-runtime", region_name="us-east-1")
-        # append mode, don't overwrite AI_Response
-        with open(output_path, "a", encoding="utf-8") as fout:
-            for product in load_products(jsonl_path):
-                print("Product: " + str(product.get("product_name")))
+    bedrock_client = boto3.client("bedrock-runtime", region_name="us-east-1")
+
+    # Load previous results to avoid duplicates
+    completed_urls = set()
+    if os.path.exists(output_path):
+        with open(output_path, "r", encoding="utf-8") as fin:
+            for line in fin:
+                try:
+                    data = json.loads(line)
+                    if "product_URL" in data:
+                        completed_urls.add(data["product_URL"])
+                except json.JSONDecodeError:
+                    pass  # skip bad lines
+
+    failed_urls = set()
+    if os.path.exists(failed_path):
+        with open(failed_path, "r", encoding="utf-8") as fin:
+            for line in fin:
+                failed_urls.add(line.strip())
+
+    with open(output_path, "a", encoding="utf-8") as fout, \
+         open(failed_path, "a", encoding="utf-8") as ffail:
+
+        for product in load_products(jsonl_path):
+            url = product.get("product_URL")
+            if not url or url in completed_urls or url in failed_urls:
+                continue  # Skip already processed or failed entries
+
+            print(f"🧃 Processing: {product.get('product_name', 'Unknown')}")
+
+            try:
                 nutrition_info = process_product(product, bedrock_client, model_id, tool_list, input_text_image)
+
                 if nutrition_info:
                     fout.write(json.dumps(nutrition_info) + "\n")
+                    fout.flush()
+                    completed_urls.add(url)
+                else:
+                    print(f"⚠️ No nutrition info for: {url}")
+                    ffail.write(url + "\n")
+                    ffail.flush()
+                    failed_urls.add(url)
 
-    except ClientError as err:
-        logger.error("AWS Bedrock ClientError: %s", err.response['Error']['Message'])
+            except Exception as e:
+                print(f"❌ Failed on {url}: {e}")
+                ffail.write(url + "\n")
+                ffail.flush()
+                failed_urls.add(url)
 
-    print("Finished processing all products.")
+    print("✅ Finished processing all products.")
+
 
 if __name__ == "__main__":
     jsonl_path = "Team M/result_deduped.jsonl"
