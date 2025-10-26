@@ -1,2 +1,5 @@
 AI_Image_Scrapping\__pycache__/** */
 AI_Image_Scrapping\downloaded_images/** */
+myenv/
+.devcontainer/
+qdrant_storage/

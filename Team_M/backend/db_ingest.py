@@ -1,0 +1,71 @@
+"""Script to ingest processed JSON Files into Qdrant"""
+import json
+
+# initialize the client
+from qdrant_client import QdrantClient
+from qdrant_client.models import Distance, VectorParams
+from typing import List
+from fastembed import TextEmbedding # default free model, can alternatively use others e.g. OpenAI
+from qdrant_client.models import PointStruct
+
+client = QdrantClient(url="http://localhost:6333")
+embedding_model = TextEmbedding()
+print("Loaded default model: BAAI/bge-small-en-v1.5")
+
+if not client.collection_exists(collection_name="walmart_collection"):
+    client.create_collection(
+        collection_name="walmart_collection",
+        vectors_config=VectorParams(size=384, distance=Distance.DOT),
+    )
+
+# Script with 2 parts: 
+def extract_upsert(limit=10):
+    payloads: List[str] = [] # docs we will upsert to qdrant 
+    """Parse through the entire JSON file, extract key fields and construct a payload, vectorize the payload, and upsert into qdrant"""
+# 1. Iterate through all the elements and construct payload - Daniel
+    with open("Team_M/cache_part_1.jsonl", "r") as file:
+        for line in file:
+            if limit == 0:
+                break
+            json_obj = json.loads(line)
+            payload = {
+                'product_name': json_obj['product_name'], 
+                'short_description': json_obj['short_description']
+            }
+            payloads.append(json.dumps(payload))
+            limit -= 1
+        
+
+
+# 2. Embed each payload as a vector - Jayden 
+# assume payload is instantiated at this step 
+    embeddings_generator = embedding_model.embed(documents=payloads)
+    embeddings_list = list(embeddings_generator)
+    len(embeddings_list[0])  
+    mapped_items_and_vectors = list(zip(payloads, embeddings_list))
+    print(f"Shape: {mapped_items_and_vectors}")
+    print("Embeddings:\n", mapped_items_and_vectors)
+
+# 3. Upsert items and their corresponding vectors into qdrant 
+    operation_info = client.upsert(
+        collection_name="walmart_collection",
+        wait=True,
+        points = [PointStruct(id=i, vector=list(tup[1]), payload=json.loads(tup[0])) for i, tup in enumerate(mapped_items_and_vectors)],
+    )
+
+    print(operation_info)
+
+# 4. Query using semantic similarity search and benchmark performance - Jayden
+def query_qdrant():
+    # TODO
+    print("Hello World")
+
+
+
+def main():
+    extract_upsert()
+    query_qdrant()
+
+
+if __name__ == "__main__":
+    main()
