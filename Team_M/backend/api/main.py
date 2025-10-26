@@ -1,5 +1,8 @@
-from fastapi import FastAPI, status
+from fastapi import FastAPI, status, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from Team_M.backend.models.qdrant_models import ProductRequest
+from services.qdrant_service import QdrantService
+from typing import Annotated
 
 app = FastAPI(
     title="Lola's 2.0 Backend"
@@ -20,8 +23,11 @@ app.add_middleware(
     responses={
     },
 )
-def handleProductQuery():
-    return 0
+def handleProductQuery(
+    request: ProductRequest,
+    qdrant_svc: Annotated[QdrantService, Depends()]
+):
+    return qdrant_svc.query(request)
 
 
 @app.get(

@@ -7,6 +7,7 @@ from qdrant_client.models import Distance, VectorParams
 from typing import List
 from fastembed import TextEmbedding # default free model, can alternatively use others e.g. OpenAI
 from qdrant_client.models import PointStruct
+import numpy as np
 
 client = QdrantClient(url="http://localhost:6333")
 embedding_model = TextEmbedding()
@@ -43,8 +44,8 @@ def extract_upsert(limit=10):
     embeddings_list = list(embeddings_generator)
     len(embeddings_list[0])  
     mapped_items_and_vectors = list(zip(payloads, embeddings_list))
-    print(f"Shape: {mapped_items_and_vectors}")
-    print("Embeddings:\n", mapped_items_and_vectors)
+    # print(f"Shape: {mapped_items_and_vectors}")
+    # print("Embeddings:\n", mapped_items_and_vectors)
 
 # 3. Upsert items and their corresponding vectors into qdrant 
     operation_info = client.upsert(
@@ -57,13 +58,22 @@ def extract_upsert(limit=10):
 
 # 4. Query using semantic similarity search and benchmark performance - Jayden
 def query_qdrant():
-    # TODO
-    print("Hello World")
+    user_query = input("Enter a query: ")
+    embeddings_gen = embedding_model.embed([user_query])
+    vectorized_query = list(embeddings_gen)
+    search_result = client.query_points(
+        collection_name="walmart_collection",
+        query=vectorized_query[0],
+        with_payload=True,
+        limit=5
+    ).points
+
+    print(search_result)
 
 
 
 def main():
-    extract_upsert()
+    # extract_upsert()
     query_qdrant()
 
 
