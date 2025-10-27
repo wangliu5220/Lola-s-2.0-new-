@@ -61,7 +61,7 @@ Here is a quick start-up guide assuming you have access to an already set up IAM
 You should now be able to send Bedrock API calls without having to add the API key to your code
 
 
-## Initializing and Running Qdrant Databse Locally
+## Initializing and Running Qdrant Database Locally
 
 In the root directory run:
 ```bash
