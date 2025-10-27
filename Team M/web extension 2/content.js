@@ -17,7 +17,7 @@ function tryInsertBox() {
   // Only run on product pages
   if (!location.pathname.includes("/ip/")) return;
 
-  const target = document.querySelector("#ip-prod-desc-atf-div-1");
+  const target = document.querySelector('div[data-testid="add-to-cart-section"]');
   if (!target || document.getElementById("walmart-extension-box")) return;
 
   insertBox(target);
