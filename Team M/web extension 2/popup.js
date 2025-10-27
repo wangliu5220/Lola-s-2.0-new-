@@ -1,31 +1,13 @@
-// document.getElementById("insertBox").addEventListener("click", async () => {
-//   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+document.getElementById("insertBox").addEventListener("click", async () => {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   
-//   chrome.scripting.executeScript({
-//     target: { tabId: tab.id },
-//     function: insertBox
-//   });
-// });
-
-// window.addEventListener("load", () => {
-//   insertBox();
-// });
-
-const observer = new MutationObserver(() => {
-  const target = document.querySelector("#ip-prod-desc-atf-div-1");
-
-  if (target && !document.getElementById("walmart-extension-box")) {
-
-    insertBox(target);
-    observer.disconnect(); // stop watching once inserted
-  }
+  chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    function: insertBox
+  });
 });
 
-// Start observing the page for added elements
-observer.observe(document.body, { childList: true, subtree: true });
-
 function insertBox() {
-    console.log('hello');
   const existingBox = document.getElementById("walmart-extension-box");
   if (existingBox) return; // prevent duplicates
 
