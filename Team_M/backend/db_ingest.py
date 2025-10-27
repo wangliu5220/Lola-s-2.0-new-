@@ -56,25 +56,11 @@ def extract_upsert(limit=10):
 
     print(operation_info)
 
-# 4. Query using semantic similarity search and benchmark performance - Jayden
-def query_qdrant():
-    user_query = input("Enter a query: ")
-    embeddings_gen = embedding_model.embed([user_query])
-    vectorized_query = list(embeddings_gen)
-    search_result = client.query_points(
-        collection_name="walmart_collection",
-        query=vectorized_query[0],
-        with_payload=True,
-        limit=5
-    ).points
-
-    print(search_result)
 
 
 
 def main():
-    # extract_upsert()
-    query_qdrant()
+    extract_upsert()
 
 
 if __name__ == "__main__":
