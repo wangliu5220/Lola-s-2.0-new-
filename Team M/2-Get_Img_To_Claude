@@ -15,39 +15,60 @@ import io
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-CACHE_FILE = "Team M/AI_Response.jsonl"
+CACHE_FILE = "Team M/.nutrition_cache.json"  # persistent cache file
+OUTPUT_FILE = "Team M/AI_Response.jsonl"     # main output file
+
+def normalize_upc(upc):
+    """Ensure UPCs are consistent strings (strip spaces, drop .0, etc)."""
+    if upc is None:
+        return None
+    upc_str = str(upc).strip()
+    if upc_str.endswith(".0"):
+        upc_str = upc_str[:-2]
+    return upc_str
+
 
 def load_cache():
-    cache = {}
+    """Load the cache from disk."""
     if os.path.exists(CACHE_FILE):
         with open(CACHE_FILE, "r", encoding="utf-8") as f:
-            for line in f:
-                try:
-                    record = json.loads(line.strip())
-                    url = record.get("product_URL")
-                    if url:
-                        cache[url] = record
-                except json.JSONDecodeError:
-                    continue
-    return cache
+            try:
+                cache = json.load(f)
+                print(f"Loaded {len(cache)} cached products from {CACHE_FILE}")
+                return cache
+            except json.JSONDecodeError:
+                print(" Cache file corrupted, starting fresh.")
+                return {}
+    return {}
 
-def save_to_cache(url, product_record):
-    """Save merged product to cache and file"""
-    if url not in CACHE:
-        CACHE[url] = product_record
-        with open(CACHE_FILE, "a", encoding="utf-8") as f:
-            f.write(json.dumps(product_record) + "\n")
 
-# Initialize cache
+def save_to_cache(upc, record):
+    """Save one product to the cache (by normalized UPC)."""
+    upc = normalize_upc(upc)
+    if not upc:
+        print("⚠️ Missing UPC, skipping cache save.")
+        return
+    CACHE[upc] = record
+    with open(CACHE_FILE, "w", encoding="utf-8") as f:
+        json.dump(CACHE, f, ensure_ascii=False, indent=2)
+
+
+# Initialize global cache once
 CACHE = load_cache()
 
 
 def contains_nutrition_info(text):
-    keywords = [
-        "nutrition", "calories", "serving size", "saturated",
-        "amount/serving", "amount per serving", "total fat",
-        "sodium", "daily value", "total carbohydrate"
-    ]
+    keywords = ["total carbohydrate",
+                "includes added sugars", 
+                "total sugars", 
+                "saturated fat", 
+                "polyunsaturated fat",
+                "monounsaturated fat", 
+                "cholesterol", 
+                "calcium", 
+                "iron",
+                "potassium"
+                ]
     return any(k in text.lower() for k in keywords)
 
 # -------------------
@@ -58,9 +79,11 @@ def load_products(jsonl_path):
         for line in f:
             yield json.loads(line.strip())
 
-MAX_SIZE = 5 * 1024 * 1024  # 5 MB
+
 
 def ocr_and_preprocess(image_url):
+    MAX_SIZE = 5 * 1024 * 1024  # 5 MB
+    MAX_DIMENSION = 8000        # max width or height in pixels
     try:
         response = requests.get(image_url, timeout=10)
         img = Image.open(BytesIO(response.content))
@@ -69,6 +92,13 @@ def ocr_and_preprocess(image_url):
             img = img.convert("RGBA")
         else:
             img = img.convert("RGB")
+        
+        w, h = img.size
+        if w > MAX_DIMENSION or h > MAX_DIMENSION:
+            scale = MAX_DIMENSION / max(w, h)
+            new_size = (int(w * scale), int(h * scale))
+            img = img.resize(new_size, Image.LANCZOS)
+            print(f"🖼️ Resized image to {new_size} for OCR")
 
         text = pytesseract.image_to_string(img).lower()
         img_bw = img.convert("L")
@@ -123,18 +153,28 @@ def process_product(product, bedrock_client, model_id, tool_list, input_text_ima
         print("No product URL found, skipping product")
         return None
 
-    if url in CACHE:
-        print(f".             Using cached nutrition info for {url}")
-        return CACHE[url]
-
+    upc = normalize_upc(product.get("universal_product_code"))
+    if upc and upc in CACHE:
+        print(f".             Using cached nutrition info for UPC {upc}")
+        return CACHE[upc]
+    
     images = [v for k, v in product.items() if k.startswith("image_url")]
     candidate_images = []
 
+    # Check for nutrition panels
     for img_url in images:
         ocr_text, processed_img = ocr_and_preprocess(img_url)
         if contains_nutrition_info(ocr_text) and processed_img:
             print(".             found nutrition information in " + str(img_url))
             candidate_images.append(processed_img)
+
+    # Fallback: if no nutrition panel found, use all processed images
+    if not candidate_images:
+        print(f"{url}: No nutrition panel detected. Using all available images instead.")
+        for img_url in images:
+            _, processed_img = ocr_and_preprocess(img_url)
+            if processed_img:
+                candidate_images.append(processed_img)
 
     if candidate_images:
         print(".               sending product to claude")
@@ -151,14 +191,14 @@ def process_product(product, bedrock_client, model_id, tool_list, input_text_ima
             if content_block:
                 nutrition_info = content_block['toolUse']['input']
                 final_product = merge_nutrition(product, nutrition_info)
-                save_to_cache(url, final_product)
+                save_to_cache(upc, final_product)
                 return final_product   # return merged product directly
         except Exception as e:
             print(f"    Error parsing Bedrock response for {url}: {e}")
             return None
-    else:
-        print(f"{url}: No nutrition panel detected.")
-        return None
+
+    # If we reach here, no usable images
+    return None
 
 def merge_nutrition(original_product, nutrition_dict):
     cleaned_product = {
@@ -168,17 +208,14 @@ def merge_nutrition(original_product, nutrition_dict):
     cleaned_product["Nutrition_facts"] = nutrition_dict
     return cleaned_product
 
-# -------------------
-# Main Pipeline
-# -------------------
-def main(jsonl_path, output_path):
+def main(jsonl_path, output_path, failed_path="failed_images.txt"):
     model_id = "us.anthropic.claude-3-5-sonnet-20240620-v1:0"
 
     input_text_image = (
         "Please obtain the nutrition information from these images. "
         "Return the nutrition information in JSON format only using the image content."
     )
-    
+
 # Define the Claude tool
     tool_list = [
         {
@@ -335,24 +372,61 @@ def main(jsonl_path, output_path):
         }
     ]
 
-    try:
-        bedrock_client = boto3.client("bedrock-runtime", region_name="us-east-1")
-        # append mode, don't overwrite AI_Response
-        with open(output_path, "a", encoding="utf-8") as fout:
-            for product in load_products(jsonl_path):
-                print("Product: " + str(product.get("product_name")))
+    bedrock_client = boto3.client("bedrock-runtime", region_name="us-east-1")
+
+    # Load previous results to avoid duplicates
+    completed_urls = set()
+    if os.path.exists(output_path):
+        with open(output_path, "r", encoding="utf-8") as fin:
+            for line in fin:
+                try:
+                    data = json.loads(line)
+                    if "product_URL" in data:
+                        completed_urls.add(data["product_URL"])
+                except json.JSONDecodeError:
+                    pass  # skip bad lines
+
+    failed_urls = set()
+    if os.path.exists(failed_path):
+        with open(failed_path, "r", encoding="utf-8") as fin:
+            for line in fin:
+                failed_urls.add(line.strip())
+
+    with open(output_path, "a", encoding="utf-8") as fout, \
+         open(failed_path, "a", encoding="utf-8") as ffail:
+
+        for product in load_products(jsonl_path):
+            url = product.get("product_URL")
+            if not url or url in completed_urls or url in failed_urls:
+                continue  # Skip already processed or failed entries
+
+            print(f"🧃 Processing: {product.get('product_name', 'Unknown')}")
+
+            try:
                 nutrition_info = process_product(product, bedrock_client, model_id, tool_list, input_text_image)
+
                 if nutrition_info:
                     fout.write(json.dumps(nutrition_info) + "\n")
+                    fout.flush()
+                    completed_urls.add(url)
+                else:
+                    print(f"⚠️ No nutrition info for: {url}")
+                    ffail.write(url + "\n")
+                    ffail.flush()
+                    failed_urls.add(url)
 
-    except ClientError as err:
-        logger.error("AWS Bedrock ClientError: %s", err.response['Error']['Message'])
+            except Exception as e:
+                print(f"❌ Failed on {url}: {e}")
+                ffail.write(url + "\n")
+                ffail.flush()
+                failed_urls.add(url)
 
-    print("Finished processing all products.")
+    print("✅ Finished processing all products.")
+
 
 if __name__ == "__main__":
-    jsonl_path = "Non-Beverage Scrape/test_data.jsonl"
-    output_path = "Non-Beverage Scrape/AI_Response.jsonl"
+    jsonl_path = "Team M/result_deduped.jsonl"
+    output_path = "Team M/AI_Response.jsonl"
     
     test_jsonl_path = "Team M/test_folder/result_from_1.jsonl"
     test_output_path = "Team M/test_folder/AI_Response.jsonl"

@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Walmart UPC Extractor",
+  "version": "1.0",
+  "description": "Extract UPC from Walmart product pages.",
+  "permissions": ["activeTab", "tabs", "scripting"],
+  "host_permissions": ["https://www.walmart.com/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "icon.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.walmart.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+
+    }
+  ]
+}
