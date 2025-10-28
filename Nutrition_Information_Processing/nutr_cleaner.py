@@ -1021,5 +1021,32 @@ class DataCleaner:
                     list.append(item)
         return list
     
+    def extract_value(self, column):
+        def extract(value):
+            if isinstance(value, str):
+                match = re.search(r"([\d\.]+)", value)  # Find numeric part
+                if match:
+                    extracted = match.group(1).strip()  # Extract and strip whitespace
+                    return extracted  # Return extracted value
+            return value  # Return original value if no valid match
+
+        self.df[column] = self.df[column].apply(extract)
+        
+    def multiply_columns(self, column1, column2, new_column):
+        self.df[new_column] = self.df.apply(
+            lambda row: int(row[column1]) * int(row[column2]) if isinstance(row[column1], int) and isinstance(row[column2], int) and not pd.isna(row[column1]) and not pd.isna(row[column2]) else None,
+            axis=1
+        )
+    def extract_DV(self, dv_column):
+        def extract_DV_value(value):
+            if isinstance(value, str):
+                match = re.search(r"([\d\.]+)%?", value)  # Find numeric part
+                if match:
+                    extracted = float(match.group(1))  # Extract and convert to float
+                    return extracted  # Return extracted value
+            return value  # Return original value if no valid match
+
+        self.df[dv_column] = self.df[dv_column].apply(extract_DV_value)
+        
     
     

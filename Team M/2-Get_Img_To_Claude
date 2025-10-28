@@ -351,12 +351,12 @@ def main(jsonl_path, output_path):
     print("Finished processing all products.")
 
 if __name__ == "__main__":
-    jsonl_path = "Team M/result_from_1.jsonl"
-    output_path = "Team M/AI_Response.jsonl"
+    jsonl_path = "Non-Beverage Scrape/test_data.jsonl"
+    output_path = "Non-Beverage Scrape/AI_Response.jsonl"
     
     test_jsonl_path = "Team M/test_folder/result_from_1.jsonl"
     test_output_path = "Team M/test_folder/AI_Response.jsonl"
     
-    # main(jsonl_path, output_path)
-    main(test_jsonl_path, test_output_path)
+    main(jsonl_path, output_path)
+    # main(test_jsonl_path, test_output_path)
 
