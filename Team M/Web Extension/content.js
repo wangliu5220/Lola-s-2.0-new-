@@ -1,15 +1,29 @@
 function extractUPC() {
   try {
-    const script = document.querySelector('script#__NEXT_DATA__');
-    if (!script) return null;
-
-    const json = JSON.parse(script.textContent);
-    const upc = json?.props?.pageProps?.initialData?.data?.product?.upc || null;
+    // 1️⃣ Try to extract from live DOM (React-injected ld+json)
+    const ldJson = [...document.querySelectorAll('script[type="application/ld+json"]')]
+      .map(s => {
+        try { return JSON.parse(s.textContent); } catch { return null; }
+      })
+      .find(obj => obj && (obj.gtin13 || obj.sku));
+    const upc = ldJson?.gtin13 || ldJson?.sku;
 
     if (upc) {
-      console.log(" Walmart UPC:", upc);
+      console.log("📦 Walmart UPC (ld+json):", upc);
       chrome.runtime.sendMessage({ action: "upc_found", upc });
       return upc;
+    }
+
+    // 2️⃣ Fall back to __NEXT_DATA__ (first load only)
+    const script = document.querySelector('script#__NEXT_DATA__');
+    if (script) {
+      const json = JSON.parse(script.textContent);
+      const upc2 = json?.props?.pageProps?.initialData?.data?.product?.upc || null;
+      if (upc2) {
+        console.log("📦 Walmart UPC (NEXT_DATA):", upc2);
+        chrome.runtime.sendMessage({ action: "upc_found", upc: upc2 });
+        return upc2;
+      }
     }
 
     return null;
@@ -19,56 +33,13 @@ function extractUPC() {
   }
 }
 
-// Run once when the content script loads
-function initUPCWatcher() {
-  let lastUrl = location.href;
-  let lastUPC = null;
-
-  const checkUPC = () => {
-    const upc = extractUPC();
-    if (upc && upc !== lastUPC) {
-      lastUPC = upc;
-    }
-  };
-
-  window.addEventListener("load", checkUPC);
-
-  const observer = new MutationObserver(() => {
-    if (location.href !== lastUrl) {
-      lastUrl = location.href;
-      console.log("🔄 Walmart URL changed:", lastUrl);
-      // setTimeout(checkUPC, 800); // delay a bit to let new data load
-      tryInsertBox();
-      checkUPC();
-    }
-    // Also try insert in case product description just appeared
-    tryInsertBox();
-  });
-
-  observer.observe(document, { subtree: true, childList: true });
-}
-
-initUPCWatcher();
-
-function tryInsertBox() {
-  console.log("hi");
-  // Only run on product pages
-  if (!location.pathname.includes("/ip/")) return;
-
-  const target = document.querySelector("#main-title");
-  if (!target || document.getElementById("walmart-extension-box")){
-    console.log("not found");
-    return;
-  } 
-
-  insertBox(target);
-}
-
 function insertBox(target) {
-  console.log("insert");
+  const existing = document.getElementById("walmart-extension-box");
+  if (existing) return;
+
   const box = document.createElement("div");
   box.id = "walmart-extension-box";
-  box.textContent = "✨ Lola's 2.0 Recommendations ✨";
+  box.textContent = "Lola's 2.0 Recommendations";
 
   Object.assign(box.style, {
     backgroundColor: "#83b866",
@@ -81,3 +52,46 @@ function insertBox(target) {
 
   target.prepend(box);
 }
+
+function tryInsertBox() {
+  const target = document.querySelector('div[data-testid="add-to-cart-section"]');
+  if (target) insertBox(target);
+}
+
+function initUPCWatcher() {
+  console.log("👀 Starting Walmart UPC watcher...");
+
+  // Run on initial load
+  extractUPC();
+  tryInsertBox();
+
+  // ✅ Hook into Next.js router events (no full reload)
+  const router = window.next?.router;
+  if (router) {
+    router.events.on("routeChangeComplete", (url) => {
+      console.log("🔄 Walmart route changed:", url);
+      setTimeout(() => {
+        extractUPC();
+        tryInsertBox();
+      }, 1200); // give React time to re-render content
+    });
+  } else {
+    console.warn("⚠️ Next.js router not found — fallback to MutationObserver.");
+    // fallback: monitor URL and DOM
+    let lastUrl = location.href;
+    const observer = new MutationObserver(() => {
+      const currentUrl = location.href;
+      if (currentUrl !== lastUrl) {
+        lastUrl = currentUrl;
+        console.log("🔄 Walmart URL changed (fallback):", currentUrl);
+        setTimeout(() => {
+          extractUPC();
+          tryInsertBox();
+        }, 1200);
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
+}
+
+initUPCWatcher();
