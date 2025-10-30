@@ -39,3 +39,19 @@ Here is a quick start-up guide assuming you have access to an already set up IAM
 3. Restart VSCode if using VSCode (if need be restart the computer as well)
 
 You should now be able to send Bedrock API calls without having to add the API key to your code
+
+
+
+## Intializing and Accessing the Qdrant Database
+
+To initialize the database, run these commands in your terminal:
+```bash
+   docker pull qdrant/qdrant
+   docker run -p 6333:6333 -p 6334:6334 \
+    -v "$(pwd)/qdrant_storage:/qdrant/storage:z" \
+    qdrant/qdrant
+```
+
+
+To access the Qdrant database, visit http://localhost:6333/dashboard.
+
