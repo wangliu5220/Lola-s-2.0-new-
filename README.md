@@ -1,10 +1,30 @@
 
 # Lola's 2.0
 
+## Virtual Environment
+It is likely in our best interest to work within a virtual environment so that we can properly handle our dependencies.
+
+This is how you would do set one up and use it:
+```bash
+python3 -m venv --copies venv
+source venv/bin/activate
+```
+
+To exit:
+```bash
+deactivate
+```
+
 ## Update and Install Dependencies: 
+
+Before development run:
+```bash
+pip install -r requirements.txt
+```
+
+After development run this command from the root directory of Lola's:
 ```bash
 pip freeze > requirements.txt
-pip install -r requirements.txt
 ```
 
 Key Libraries that will be installed : 
@@ -41,17 +61,23 @@ Here is a quick start-up guide assuming you have access to an already set up IAM
 You should now be able to send Bedrock API calls without having to add the API key to your code
 
 
+## Initializing and Running Qdrant Database Locally
 
-## Intializing and Accessing the Qdrant Database
-
-To initialize the database, run these commands in your terminal:
+In the root directory run:
 ```bash
-   docker pull qdrant/qdrant
-   docker run -p 6333:6333 -p 6334:6334 \
+docker pull qdrant/qdrant
+docker run -p 6333:6333 -p 6334:6334 \
     -v "$(pwd)/qdrant_storage:/qdrant/storage:z" \
     qdrant/qdrant
 ```
 
+To view the database, you can go to http://localhost:6333/dashboard after running the previous commands.
 
-To access the Qdrant database, visit http://localhost:6333/dashboard.
+If you see that there are no entries in the database, you may have to run the ingest script in Team_M/backend/db_ingest.py
 
+## Running FastAPI Server
+
+```bash
+fastapi run Team_M/backend/api/main.py --reload
+```
+*Note that API endpoints will  not work if the database is not running.*
