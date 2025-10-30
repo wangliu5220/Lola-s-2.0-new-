@@ -20,18 +20,19 @@ if not client.collection_exists(collection_name="walmart_collection"):
     )
 
 # Script with 2 parts: 
-def extract_upsert(limit=10):
+def extract_upsert(limit=100):
     payloads: List[str] = [] # docs we will upsert to qdrant 
     """Parse through the entire JSON file, extract key fields and construct a payload, vectorize the payload, and upsert into qdrant"""
 # 1. Iterate through all the elements and construct payload - Daniel
-    with open("Team_M/cache_part_1.jsonl", "r") as file:
+    with open("Team_M/AI_Response.jsonl", "r") as file:
         for line in file:
             if limit == 0:
                 break
             json_obj = json.loads(line)
             payload = {
                 'product_name': json_obj['product_name'], 
-                'short_description': json_obj['short_description']
+                'Nutrition_facts': json_obj['Nutrition_facts']
+
             }
             payloads.append(json.dumps(payload))
             limit -= 1
@@ -40,7 +41,7 @@ def extract_upsert(limit=10):
 
 # 2. Embed each payload as a vector - Jayden 
 # assume payload is instantiated at this step 
-    embeddings_generator = embedding_model.embed(documents=payloads)
+    embeddings_generator = embedding_model.embed(documents=[ json.loads(payload)['product_name'] for payload in payloads])
     embeddings_list = list(embeddings_generator)
     len(embeddings_list[0])  
     mapped_items_and_vectors = list(zip(payloads, embeddings_list))

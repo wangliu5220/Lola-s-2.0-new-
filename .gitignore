@@ -1,6 +1,6 @@
 AI_Image_Scrapping\__pycache__/** */
 AI_Image_Scrapping\downloaded_images/** */
-myenv/
+venv/
 .devcontainer/
 qdrant_storage/
 .venv/
@@ -8,4 +8,4 @@ __pycache__/
 *.py[cod]
 *.pyo
 
-
+.env

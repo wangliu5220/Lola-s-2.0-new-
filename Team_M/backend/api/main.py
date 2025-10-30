@@ -27,7 +27,7 @@ def handleProductQuery(
     request: ProductRequest,
     qdrant_svc: Annotated[QdrantService, Depends()]
 ):
-    return qdrant_svc.query(request)
+    return qdrant_svc.query_and_recommend(request)
 
 
 @app.post(
