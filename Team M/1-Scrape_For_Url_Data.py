@@ -5,6 +5,8 @@ import link_scrape
 import queue
 import os
 
+
+
 # Base Walmart URL
 WALMART_URL = "https://www.walmart.com/"
 
@@ -58,7 +60,6 @@ snacks = [
     "spicy chips",
     "bbq chips",
 ]
-
 frozen_foods = [
     "frozen foods",
     "frozen meals",
@@ -144,7 +145,6 @@ frozen_foods = [
     "organic frozen foods",
     "non-GMO frozen foods",
 ]
-
 bakery = [
     "bakery",
     "fresh bakery",
@@ -419,7 +419,6 @@ pantry = [
     "low sodium canned goods",
     "sugar free pantry items",
 ]
-
 breakfast = [
     "breakfast foods",
     "cereal",
@@ -457,8 +456,6 @@ breakfast = [
     "breakfast drinks",
 ]
 
-
-search_queries = breakfast
 
 # Queue and seen URLs
 product_queue = queue.Queue()
@@ -631,9 +628,10 @@ def processFromUrls( SCRAPE_LIMIT=100):
 
 
 def main():
-    OUTPUT_FILE = "Non-Beverage Scrape/test_data.jsonl"
-    CACHE_FILE = "Team M/cache_part_1.jsonl"
-    SCRAPE_LIMIT = -1  # Adjust as needed
+    OUTPUT_FILE = "Team M/Data/snacks/part1_output.jsonl"
+    CACHE_FILE = "Team M/cache_part_1.jsonl" #Don't change
+    SCRAPE_LIMIT = -1  # Adjust as needed, -1 is unlimited.
+    search_queries = snacks
 
     # Load cache
     cache = {}

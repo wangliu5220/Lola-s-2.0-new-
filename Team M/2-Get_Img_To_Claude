@@ -9,14 +9,10 @@ import boto3
 from botocore.exceptions import ClientError
 import io
 
-# -------------------
-# Logging
-# -------------------
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-CACHE_FILE = "Team M/.nutrition_cache.json"  # persistent cache file
-OUTPUT_FILE = "Team M/AI_Response.jsonl"     # main output file
+CACHE_FILE = "Team M/.nutrition_cache.json"  # Don't change
 
 def normalize_upc(upc):
     """Ensure UPCs are consistent strings (strip spaces, drop .0, etc)."""
@@ -118,9 +114,6 @@ def ocr_and_preprocess(image_url):
         print(f"OCR failed for {image_url}: {e}")
         return "", None
 
-# -------------------
-# AWS Bedrock Functions
-# -------------------
 def generate_json_image_conversation(bedrock_client, model_id, input_text, input_images, tool_list):
     messages = [{
         "role": "user",
@@ -335,6 +328,12 @@ def main(jsonl_path, output_path, failed_path="failed_images.txt"):
                             "description": "An array of product ingredients.",
                             "items": { "type": "string" }
                         },
+                        "ultraprocessed": {
+                            "type": ["boolean", "null"],
+                            "description": (
+                                "Whether the product is classified as ultraprocessed (True) or not ultraprocessed (False) based on ingredient composition, presence of additives, or artificial sweeteners."
+                            )
+                        }
                         
                     },
                     "required": [
@@ -425,12 +424,12 @@ def main(jsonl_path, output_path, failed_path="failed_images.txt"):
 
 
 if __name__ == "__main__":
-    jsonl_path = "Team M/result_deduped.jsonl"
-    output_path = "Team M/AI_Response.jsonl"
-    
-    test_jsonl_path = "Team M/test_folder/result_from_1.jsonl"
-    test_output_path = "Team M/test_folder/AI_Response.jsonl"
-    
+
+    jsonl_path = "Team M/Data/snacks/part1.5_output.jsonl"
+    output_path = "Team M/Data/snacks/part2_output.jsonl"
     main(jsonl_path, output_path)
+
+    # test_jsonl_path = "Team M/test_folder/result_from_1.jsonl"
+    # test_output_path = "Team M/test_folder/AI_Response.jsonl"
     # main(test_jsonl_path, test_output_path)
 
