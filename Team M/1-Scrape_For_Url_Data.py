@@ -21,7 +21,6 @@ HEADERS = {
 
 # Search queries
 snacks = [
-    "snacks",
     "chips",
     "pretzels",
     "popcorn",
@@ -59,6 +58,7 @@ snacks = [
     "non-GMO snacks",
     "spicy chips",
     "bbq chips",
+    "snacks"
 ]
 frozen_foods = [
     "frozen foods",
@@ -630,7 +630,7 @@ def processFromUrls( SCRAPE_LIMIT=100):
 def main():
     OUTPUT_FILE = "Team M/Data/snacks/part1_output.jsonl"
     CACHE_FILE = "Team M/cache_part_1.jsonl" #Don't change
-    SCRAPE_LIMIT = -1  # Adjust as needed, -1 is unlimited.
+    SCRAPE_LIMIT = 5  # Adjust as needed, -1 is unlimited.
     search_queries = snacks
 
     # Load cache
@@ -670,7 +670,10 @@ def main():
                     try:
                         product_info = extract_product_info(product_url, cache)
                         if product_info:
-                            print(f"Writing product: {product_info.get('product_name', 'UNKNOWN')}")
+                            # Add originating search query
+                            product_info["search_query"] = query
+
+                            print(f"Writing product: {product_info.get('product_name', 'UNKNOWN')} (query: {query})")
                             f.write(json.dumps(product_info) + "\n")
                             f.flush()
                             counter += 1
