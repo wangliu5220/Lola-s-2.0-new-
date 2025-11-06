@@ -196,7 +196,7 @@ def process_product(product, bedrock_client, model_id, tool_list, input_text_ima
 def merge_nutrition(original_product, nutrition_dict):
     cleaned_product = {
         k: v for k, v in original_product.items()
-        if k in ["product_name", "snap_eligible", "universal_product_code", "price", "product_URL"]
+        if k in ["product_name", "snap_eligible", "universal_product_code", "price", "product_URL", "search_query"]
     }
     cleaned_product["Nutrition_facts"] = nutrition_dict
     return cleaned_product
