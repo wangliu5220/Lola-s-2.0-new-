@@ -363,7 +363,8 @@ def main(jsonl_path, output_path, failed_path="failed_images.txt"):
                         "fiber_DV",
                         "polyunsaturated_fat_absolute",
                         "monounsaturated_fat_absolute",
-                        "ingredients"
+                        "ingredients",
+                        "ultraprocessed"
                     ]
                 }
             }
