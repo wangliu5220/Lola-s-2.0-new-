@@ -1,13 +1,12 @@
 import json
-
-# File paths
-ai_response_path = "Team M/AI_Response.jsonl"
-result_path = "Team M/result_from_1.jsonl"
-output_path = "Team M/final_response.jsonl"
+#Combine data from Part 1 and Part 2 to add url for extension.
+part2_response = "Team M/Data/snacks/part2_output.jsonl"
+part1_result = "Team M/Data/snacks/part1_output.jsonl"
+output_path = "Team M/Data/snacks/final_response.jsonl"
 
 # Load result_from_1.jsonl into a lookup dictionary {upc: image_url_1}
 upc_to_image = {}
-with open(result_path, "r") as f:
+with open(part1_result, "r") as f:
     for line in f:
         try:
             data = json.loads(line)
@@ -19,7 +18,7 @@ with open(result_path, "r") as f:
             continue
 
 # Merge into AI_Response.jsonl
-with open(ai_response_path, "r") as fin, open(output_path, "w") as fout:
+with open(part2_response, "r") as fin, open(output_path, "w") as fout:
     for line in fin:
         try:
             record = json.loads(line)
