@@ -455,6 +455,81 @@ breakfast = [
     "protein shakes",
     "breakfast drinks",
 ]
+beverages = search_queries = [
+    "milk",
+    "drinks",
+    "coffee",
+    "sparkling water",
+    "water",
+    "juice",
+    "tea",
+    "soda",
+    "energy drinks",
+    "fruit juice",
+    "fruit punch juice",
+    "sports drinks",
+    "flavored water",
+    "mineral water",
+    "spring water",
+    "purified water",
+    "distilled water",
+    "bottled water",
+    "iced tea",
+    "lemonade",
+    "kombucha",
+    "probiotic drinks",
+    "plant-based milk",
+    "dairy-free milk",
+    "lactose-free milk",
+    "mocha",
+    "latte",
+    "espresso",
+    "iced coffee",
+    "coffee creamer",
+    "coffee syrup",
+    "hot chocolate",
+    "chocolate milk",
+    "smoothie",
+    "cola",
+    "diet soda",
+    "root beer",
+    "ginger ale",
+    "cream soda",
+    "tonic water",
+    "club soda",
+    "orange soda",
+    "grape soda",
+    "lemon-lime soda",
+    "fruit soda",
+    "berry soda",
+    "vanilla soda",
+    "cherry soda",
+    "sugar-free soda",
+    "sweet tea",
+    "bubble tea",
+    "milkshake",
+    "fruit flavor",
+    "milk drinks",
+    "milk beverages",
+    "fruit flavor sparkling water",
+    "fruit punch",
+    "dairy drinks",
+    "yogurt drink",
+    "non sweet tea",
+    "iced sweet tea",
+    "fruit punch soda",
+    "fruit punch juice",
+    "fruit punch flavor sparkling water",
+    "fruit flavor sparkling water",
+    "fruit flavor sparkling water with real fruit",
+    "fruit flavor sparkling water with natural flavors",
+    "fruit flavor sparkling water with artificial flavors",
+    "fruit flavor sparkling water with no added sugar",
+    "fruit flavor sparkling water with no added calories",
+    "fruit flavor sparkling water with antioxidant",
+    "beverages",
+
+]
 
 
 # Queue and seen URLs
@@ -626,12 +701,11 @@ def processFromUrls( SCRAPE_LIMIT=100):
 
     print("Scraping completed.")
 
-
 def main():
-    OUTPUT_FILE = "Team M/Data/snacks/part1_output.jsonl"
-    CACHE_FILE = "Team M/cache_part_1.jsonl" #Don't change
-    SCRAPE_LIMIT = 5  # Adjust as needed, -1 is unlimited.
-    search_queries = snacks
+    OUTPUT_FILE = "Team M/Data/beverages/part1_output.jsonl"
+    CACHE_FILE = "Team M/cache_part_1.jsonl"  # Don't change TODO if UPC matches cache, add search query to cache.
+    SCRAPE_LIMIT = -1  # Adjust as needed, -1 is unlimited.
+    search_queries = beverages
 
     # Load cache
     cache = {}
@@ -661,10 +735,10 @@ def main():
                 print(f"Found {len(links)} links on page {page_number}")
 
                 for link in links:
-                    if link not in seen_urls:
+                    if link not in seen_urls :
                         product_queue.put(link)
                         seen_urls.add(link)
-
+                    
                 while not product_queue.empty():
                     product_url = product_queue.get()
                     try:
@@ -685,17 +759,18 @@ def main():
                     except Exception as e:
                         print(f"Failed to process {product_url}: {e}")
                 else:
+                    # ✅ Save cache after every page
+                    with open(CACHE_FILE, "w") as f_cache:
+                        for item in cache.values():
+                            f_cache.write(json.dumps(item) + "\n")
+                    print(f"Cache saved after page {page_number} of query '{query}'")
+
                     page_number += 1
-                    if(page_number > 99):
+                    if page_number > 99:
                         print("Page limit reached 99")
                         break
                     continue
                 break
-
-    # Save cache
-    with open(CACHE_FILE, "w") as f_cache:
-        for item in cache.values():
-            f_cache.write(json.dumps(item) + "\n")
 
     print("Scraping completed.")
 
