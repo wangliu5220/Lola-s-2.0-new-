@@ -171,10 +171,12 @@ def process_product(product, bedrock_client, model_id, tool_list, input_text_ima
 
     if candidate_images:
         print(".               sending product to claude")
+        prompt_text = f"Product name: {product.get('product_name', 'Unknown')}\n" + input_text_image
+        
         response = generate_json_image_conversation(
             bedrock_client,
             model_id,
-            input_text_image,
+            prompt_text,
             candidate_images,
             tool_list
         )
@@ -357,6 +359,12 @@ def main(jsonl_path, output_path, failed_path="Team M/failed_images.txt"):
                             "description": (
                                 "The flavor profile of the product. Select from 'sweet', 'salty', 'sour', 'bitter', 'umami'. If not found, it will be None "
                             )    
+                        },
+                        "secondary_flavor_profile":{
+                            "type": ["string", "null"],
+                            "description": (
+                                "The secondary flavor profile of the product. Select from 'fruity', 'floral', 'herbal', 'green', 'spicy', 'pungent', 'nutty', 'toasted', 'earthy', 'smoky', 'charred', 'woody', 'resinous', 'creamy', 'fatty', 'metallic', 'mineral', 'fermented', 'funky', 'roasted', 'caramelized', 'savory', 'aromatic', 'vegetal', 'leguminous', 'seafood', 'marine', 'cool', 'fresh'. If not found, it will be None "
+                            )    
                         }
                         
                     },
@@ -392,7 +400,8 @@ def main(jsonl_path, output_path, failed_path="Team M/failed_images.txt"):
                         "category",
                         "flavor_profile",
                         "food_type",
-                        "package_size"
+                        "package_size",
+                        "secondary_flavor_profile"
                     ]
                 }
             }

@@ -56892,5 +56892,53 @@
       "food_type": "dairy",
       "package_size": 1
     }
+  },
+  "087932600645": {
+    "product_name": "PET Dairy 2% Reduced Fat Milk - 64 fl oz",
+    "snap_eligible": false,
+    "price": 3,
+    "universal_product_code": "087932600645",
+    "product_URL": "https://www.walmart.com/ip/PET-Dairy-2-Reduced-Fat-Milk-64-fl-oz/105377269?classType=REGULAR&from=/search",
+    "avg_rating": 3.239130434782609,
+    "search_query": "milk",
+    "Nutrition_facts": {
+      "servings_per_container": "8",
+      "serving_size": "1 cup (240mL)",
+      "percent_juice": "<UNKNOWN>",
+      "amount_per_serving": "1 cup (240mL)",
+      "calories": "130",
+      "total_fat_absolute": "5g",
+      "total_fat_DV": "6%",
+      "sodium_absolute": "130mg",
+      "sodium_DV": "6%",
+      "total_carbs_absolute": "13g",
+      "total_carbs_DV": "5%",
+      "total_sugars_absolute": "12g",
+      "included_added_sugars_absolute": "<UNKNOWN>",
+      "included_added_sugars_DV": "<UNKNOWN>",
+      "protein_absolute": "8g",
+      "protein_DV": "16%",
+      "cholesterol_absolute": "20mg",
+      "cholesterol_DV": "7%",
+      "saturated_fat_absolute": "3g",
+      "saturated_fat_DV": "15%",
+      "trans_fat_absolute": "<UNKNOWN>",
+      "trans_fat_DV": "<UNKNOWN>",
+      "fiber_absolute": "<UNKNOWN>",
+      "fiber_DV": "<UNKNOWN>",
+      "polyunsaturated_fat_absolute": "<UNKNOWN>",
+      "monounsaturated_fat_absolute": "<UNKNOWN>",
+      "ingredients": [
+        "REDUCED FAT MILK",
+        "VITAMIN A PALMITATE",
+        "VITAMIN D3"
+      ],
+      "ultraprocessed": false,
+      "category": "Flavored Milk",
+      "flavor_profile": "<UNKNOWN>",
+      "food_type": "dairy",
+      "package_size": 1,
+      "secondary_flavor_profile": "<UNKNOWN>"
+    }
   }
 }
