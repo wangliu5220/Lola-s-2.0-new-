@@ -1,7 +1,7 @@
 import json
 
-input_path = "Team M/Data/snacks/part1_output.jsonl"
-output_path = "Team M/Data/snacks/part1.5_output.jsonl"
+input_path = "Team M/Data/beverages/part1_output.jsonl"
+output_path = "Team M/Data/beverages/part1.5_output.jsonl"
 
 seen_upcs = set()
 deduped = []

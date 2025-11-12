@@ -196,12 +196,12 @@ def process_product(product, bedrock_client, model_id, tool_list, input_text_ima
 def merge_nutrition(original_product, nutrition_dict):
     cleaned_product = {
         k: v for k, v in original_product.items()
-        if k in ["product_name", "snap_eligible", "universal_product_code", "price", "product_URL", "search_query"]
+        if k in ["product_name", "snap_eligible", "universal_product_code", "price", "product_URL", "search_query", "avg_rating"]
     }
     cleaned_product["Nutrition_facts"] = nutrition_dict
     return cleaned_product
 
-def main(jsonl_path, output_path, failed_path="failed_images.txt"):
+def main(jsonl_path, output_path, failed_path="Team M/failed_images.txt"):
     model_id = "us.anthropic.claude-3-5-sonnet-20240620-v1:0"
 
     input_text_image = (
@@ -333,6 +333,30 @@ def main(jsonl_path, output_path, failed_path="failed_images.txt"):
                             "description": (
                                 "Whether the product is classified as ultraprocessed (True) or not ultraprocessed (False) based on ingredient composition, presence of additives, or artificial sweeteners."
                             )
+                        },
+                        "food_type":{
+                            "type": ["string", "null"],
+                            "description": (
+                                "The type of the food. Select from 'bakery', 'breakfast', 'canned goods', 'dairy', 'alternative dairy', 'eggs', 'dry goods and pasta', 'meat and seafood', 'legumes', 'grains and rice', 'other', 'pantry', 'produce', 'snacks', 'frozen food'"
+                            ) 
+                        },
+                        "category":{
+                            "type": ["string", "null"],
+                            "description": (
+                                "The category of the food. Select from 'Bread', 'Buns & Rolls', 'Sweet Bakery', 'Tortillas', 'Cold Cereal', 'Breakfast Breads', 'Granola', 'Oatmeal and grits', 'Pancake & Waffle Mixes', 'Canned & Jarred Vegetables', 'Canned Fruit & Applesauce', 'Canned Meals', 'Canned Beans', 'Canned Meat & Seafood', 'Canned Soup', 'Liquid Broth', 'Butter, Margarine & Substitutes', 'Cheese', 'Cream', 'Flavored Milk', 'Dairy spread', 'Refrigerated Pudding & Desserts', 'Yogurt', 'Drinkable yogurts', 'Non-dairy milks', 'Non-dairy yogurts', 'Non-dairy cheese', 'Eggs', 'Dry Pasta', 'Fresh Pasta', 'Frozen Pasta', 'Gluten Free, high protein pasta', 'Instant Foods, Instant Noodles', 'Pasta Sauce', 'Ramen & Instant noodles', 'Meat, Poultry & Seafood', 'Beans and legumes', 'Quinoa, rice, couscous, farro, polenta', 'Dips & Spreads', 'Tofu & Meat Alternatives', 'Baking Ingredients', 'Condiments & Sauces', 'Fruit Spreads', 'Honey & Syrups', 'Ice Cream Toppings', 'Marinades & Meat Preparation', 'Nut Butter', 'Oils, Vinegars & Salad Dressing', 'Pickled Goods & Olives', 'Salad Toppings', 'Salsas', 'Spices & Seasonings', 'Fresh Fruits', 'Fresh Herbs', 'Fresh Vegetables', 'Candy & Chocolate', 'Chips & Pretzels', 'Cookies and Sweet Crackers', 'Savory Crackers', 'Energy & Granola Bars', 'Fruit & Vegetable Snacks', 'Jerky', 'Trail Mix & Snack Mix', 'Frozen Snacks', 'Frozen Breakfast', 'Frozen Pizzas', 'Frozen fruit', 'Frozen vegetables', 'Frozen dumplings', 'Frozen desserts', 'Frozen Breakfast', 'Frozen Meals', 'Frozen Bread'"
+                            ) 
+                        },
+                        "package_size":{
+                            "type": ["integer", "null"],
+                            "description": (
+                                "The number of items in the product. A 12-pack would be '12'. If not found in the image, it will be 1."
+                            ) 
+                        },
+                        "flavor_profile":{
+                            "type": ["string", "null"],
+                            "description": (
+                                "The flavor profile of the product. Select from 'sweet', 'salty', 'sour', 'bitter', 'umami'. If not found, it will be None "
+                            )    
                         }
                         
                     },
@@ -364,7 +388,11 @@ def main(jsonl_path, output_path, failed_path="failed_images.txt"):
                         "polyunsaturated_fat_absolute",
                         "monounsaturated_fat_absolute",
                         "ingredients",
-                        "ultraprocessed"
+                        "ultraprocessed",
+                        "category",
+                        "flavor_profile",
+                        "food_type",
+                        "package_size"
                     ]
                 }
             }
@@ -426,8 +454,8 @@ def main(jsonl_path, output_path, failed_path="failed_images.txt"):
 
 if __name__ == "__main__":
 
-    jsonl_path = "Team M/Data/snacks/part1.5_output.jsonl"
-    output_path = "Team M/Data/snacks/part2_output.jsonl"
+    jsonl_path = "Team M/Data/beverages/part1.5_output.jsonl"
+    output_path = "Team M/Data/beverages/part2_output.jsonl"
     main(jsonl_path, output_path)
 
     # test_jsonl_path = "Team M/test_folder/result_from_1.jsonl"
