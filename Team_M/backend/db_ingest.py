@@ -24,14 +24,18 @@ def extract_upsert(limit=100):
     payloads: List[str] = [] # docs we will upsert to qdrant 
     """Parse through the entire JSON file, extract key fields and construct a payload, vectorize the payload, and upsert into qdrant"""
 # 1. Iterate through all the elements and construct payload - Daniel
-    with open("Team_M/AI_Response.jsonl", "r") as file:
+    with open("Team_M/Data/beverages/final_response.jsonl", "r") as file:
         for line in file:
             if limit == 0:
                 break
             json_obj = json.loads(line)
             payload = {
-                'product_name': json_obj['product_name'], 
-                'Nutrition_facts': json_obj['Nutrition_facts']
+                'product_name': json_obj.get('product_name', None), 
+                'universal_product_code': json_obj.get('universal_product_code', None), 
+                'Nutrition_facts': json_obj.get('Nutrition_facts', None),
+                'price': json_obj.get('price', None),
+                'avg_rating': json_obj.get('avg_rating', None),
+                'image_url': json_obj.get('image_url', None)
 
             }
             payloads.append(json.dumps(payload))
