@@ -80,4 +80,6 @@ If you see that there are no entries in the database, you may have to run the in
 ```bash
 fastapi run Team_M/backend/api/main.py --reload
 ```
+To test API calls interactively with, visit http://localhost:8000/docs or replace 8000 with your local target port. 
+
 *Note that API endpoints will  not work if the database is not running.*
