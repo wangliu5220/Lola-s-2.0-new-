@@ -23,10 +23,10 @@ aws_region = os.getenv("AWS_REGION", "us-east-1")
 
 class QdrantService:
     def query_and_recommend(self, request: ProductRequest):
-        print(f"Received query request: {request.content}")
+        print(f"Received query request: {request}")
 
         # Generate embedding
-        embeddings_gen = embedding_model.embed([request.content])
+        embeddings_gen = embedding_model.embed([request.name + " " + request.description])
         vectorized_query = list(embeddings_gen)
 
         # Query Qdrant
@@ -34,7 +34,7 @@ class QdrantService:
             collection_name="walmart_collection",
             query=vectorized_query[0],
             with_payload=True,
-            limit=3
+            limit=5
         ).points
 
         # # Extract product data from Qdrant results
@@ -75,20 +75,7 @@ class QdrantService:
         # return reply_text
 
         # generate harm_score
-        payloads = [point.payload for point in search_result]
-
-        # Create a list of tuples (item, score)
-        scored_items = []
-        for item in payloads:
-            score = statistics.mean([
-                float(item["Nutrition_facts"]["total_fat_DV"].replace('%', '')),
-                float(item["Nutrition_facts"]["sodium_DV"].replace('%', '')),
-                float(item["Nutrition_facts"]["included_added_sugars_DV"].replace('%', '')),
-            ])
-            scored_items.append((item, score))
-
-        final_result = sorted(scored_items, key=lambda x: x[1])
-
-        return final_result
+        points = [point.payload for point in search_result]
+        return { "best_match": points[0], "additional_matches": points[1:] }
 
         
