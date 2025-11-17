@@ -35,7 +35,8 @@ def extract_upsert(limit=100):
                 'Nutrition_facts': json_obj.get('Nutrition_facts', None),
                 'price': json_obj.get('price', None),
                 'avg_rating': json_obj.get('avg_rating', None),
-                'image_url': json_obj.get('image_url', None)
+                'image_url': json_obj.get('image_url', None),
+                'product_URL': json_obj.get('product_URL', None)
 
             }
             payloads.append(json.dumps(payload))

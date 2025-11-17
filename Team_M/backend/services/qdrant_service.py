@@ -93,10 +93,10 @@ def get_nutrient_per_hundred(item, nutrient: HarmNutrient) -> float:
 
 class QdrantService:
     def query_and_recommend(self, request: ProductRequest):
-        print(f"Received query request: {request.content}")
+        print(f"Received query request: {request}")
 
         # Generate embedding
-        embeddings_gen = embedding_model.embed([request.content])
+        embeddings_gen = embedding_model.embed([request.name + " " + request.description])
         vectorized_query = list(embeddings_gen)
 
         # Query Qdrant
@@ -129,10 +129,6 @@ class QdrantService:
         fat_rankings = sorted(fat_rankings, key=lambda x: x[1])
         sodium_rankings = sorted(sodium_rankings, key=lambda x: x[1])
         sugar_rankings = sorted(sugar_rankings, key=lambda x: x[1])
-
-        print(len(fat_rankings))
-        print(len(sodium_rankings))
-        print(len(sugar_rankings))
         
         rankings: dict[str: list] = {}
         for tup in fat_rankings:
@@ -146,6 +142,7 @@ class QdrantService:
         composite_ranking = sorted([rankings[key] for key in rankings], key=lambda x: x[1])
         final_results = sorted(composite_ranking[:5], key=lambda x: x[0]['price']/get_serving_size(x[0]))
 
-        return { "best_match": final_results[0], "additional_matches": final_results[1:] }
+        print(final_results[0])
+        return { "best_match": final_results[0][0], "additional_matches": final_results[1:] }
 
         
