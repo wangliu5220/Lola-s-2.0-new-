@@ -27,7 +27,7 @@ aws_region = os.getenv("AWS_REGION", "us-east-1")
 # helpers 
 
 class HarmNutrient(Enum):
-    FAT = "total_fat_DV"
+    FAT = "saturated_fat_DV"
     SUGAR = "included_added_sugars_DV"
     SODIUM = "sodium_DV"
 
