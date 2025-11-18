@@ -27,10 +27,9 @@ aws_region = os.getenv("AWS_REGION", "us-east-1")
 # helpers 
 
 class HarmNutrient(Enum):
-    FAT = "total_fat_absolute"
-    SUGAR = "total_sugars_absolute"
-    SODIUM = "sodium_absolute"
-
+    FAT = "saturated_fat_DV"
+    SUGAR = "included_added_sugars_DV"
+    SODIUM = "sodium_DV"
 
 def extract_numeric_part(text: str) -> float:
     """
@@ -61,12 +60,13 @@ def get_serving_size(item):
         return final_value
     except KeyError as e: 
         print(f"{e}: Missing important field")
-        return 0
+        return None
 
-def get_nutrient_per_hundred(item, nutrient: HarmNutrient) -> float:
+def get_nutrient_dv(item, nutrient: HarmNutrient) -> float:
     """
-    Gets the fat per 100/ml/g
-    args: item 
+    Gets the specified nutrient daily value for a given item
+    args: an item from the database 
+    returns: the daily value as a float 
     """
     nutrient_str = ""
     try:
@@ -76,20 +76,13 @@ def get_nutrient_per_hundred(item, nutrient: HarmNutrient) -> float:
         try:
             nutrient_float = float(nutrient_str)
         except ValueError as e:
+            print(f"Unable to retrieve daily value for {nutrient.value} due to error: {e}.")
+            print(item['product_name'])
             return None
-        serving_size = get_serving_size(item)
-        if serving_size and serving_size > 0:
-            return nutrient_float/serving_size
-        else:
-            return None
-
+        return nutrient_float
     except KeyError as e:
         print(f"{e}: Missing important field")
         return None
-
-    
-
-
 
 class QdrantService:
     def query_and_recommend(self, request: ProductRequest):
@@ -110,39 +103,21 @@ class QdrantService:
         payloads = [point.payload for point in search_result]
 
         # Create a list of tuples (item, score)
-        composite_ranking = []
-        fat_rankings = []
-        sodium_rankings = []
-        sugar_rankings = []
+        composite_rankings = []
         for item in payloads:
-            # calculate harm score using Kaela's algorithm 
-            # use regex to get the grams/serving if food, ml/serving if beverage 
-            # get fat/100g/ml 
-            fat = get_nutrient_per_hundred(item, HarmNutrient.FAT)
-            sodium = get_nutrient_per_hundred(item, HarmNutrient.SODIUM)
-            sugar =  get_nutrient_per_hundred(item, HarmNutrient.SUGAR)
-            if None not in (fat, sodium, sugar):
-                fat_rankings.append((item, fat))
-                sodium_rankings.append((item, sodium))
-                sugar_rankings.append((item, sugar))
+            fat = get_nutrient_dv(item, HarmNutrient.FAT)
+            sodium = get_nutrient_dv(item, HarmNutrient.SODIUM)
+            sugar =  get_nutrient_dv(item, HarmNutrient.SUGAR)
+            serving_size = get_serving_size(item)
 
-        fat_rankings = sorted(fat_rankings, key=lambda x: x[1])
-        sodium_rankings = sorted(sodium_rankings, key=lambda x: x[1])
-        sugar_rankings = sorted(sugar_rankings, key=lambda x: x[1])
-        
-        rankings: dict[str: list] = {}
-        for tup in fat_rankings:
-            rankings[tup[0]["product_name"]] = [tup[0], fat_rankings.index(tup)]
-        for tup in sodium_rankings:
-            rankings[tup[0]["product_name"]][1] += sodium_rankings.index(tup)
-        for tup in sugar_rankings:
-            rankings[tup[0]["product_name"]][1] =  (rankings[tup[0]["product_name"]][1] + sugar_rankings.index(tup)) / 3
-        
+            if None not in (fat, sodium, sugar, serving_size):
+                # Only include the item in the recommendations if we can validate its data to avoid potential misrepresentation
+                composite_rankings.append((item, sum((fat, sodium, sugar))/3, item['price']/serving_size)) # format: item, score, price/g
 
-        composite_ranking = sorted([rankings[key] for key in rankings], key=lambda x: x[1])
-        final_results = sorted(composite_ranking[:5], key=lambda x: x[0]['price']/get_serving_size(x[0]))
+        composite_rankings = sorted(composite_rankings, key=lambda x: x[1])
+        upper_quartile = LIMIT//4 if LIMIT >= 4 else 1
+        final_results = sorted(composite_rankings[:upper_quartile], key=lambda x: x[2])
 
-        print(final_results[0])
-        return { "best_match": final_results[0][0], "additional_matches": final_results[1:] }
+        return { "best_match": final_results[0][0], "additional_matches": final_results[1:] if len(final_results) >= 2 else None } if final_results else { "best_match": None, "additional_matches": None }
 
         
