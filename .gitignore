@@ -1,2 +1,14 @@
 AI_Image_Scrapping\__pycache__/** */
 AI_Image_Scrapping\downloaded_images/** */
+.env
+.devcontainer/
+venv/
+qdrant_storage/
+venv/
+.devcontainer/
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+
+.env
