@@ -675,7 +675,7 @@ def processFromUrls( SCRAPE_LIMIT=100):
     "https://www.walmart.com/ip/Core-Power-Protein-Shake-with-26g-Protein-by-fairlife-Milk-Vanilla-14-fl-oz/822766999?classType=VARIANT&athbdg=L1102&from=/search"
     ]
     OUTPUT_FILE="Non-Beverage Scrape/test_data.jsonl"
-    CACHE_FILE="Team M/test_folder/cache_part_1.jsonl"
+    CACHE_FILE="Team_M/test_folder/cache_part_1.jsonl"
     # Load cache
     cache = {}
     if os.path.exists(CACHE_FILE):
@@ -724,8 +724,8 @@ def processFromUrls( SCRAPE_LIMIT=100):
     print("Scraping completed.")
 
 def main():
-    OUTPUT_FILE = "Team M/Data/beverages/part1_output.jsonl"
-    CACHE_FILE = "Team M/cache_part_1.jsonl"  # Don't change TODO if UPC matches cache, add search query to cache.
+    OUTPUT_FILE = "Team_M/Data/beverages/part1_output.jsonl"
+    CACHE_FILE = "Team_M/cache_part_1.jsonl"  # Don't change TODO if UPC matches cache, add search query to cache.
     SCRAPE_LIMIT = -1  # Adjust as needed, -1 is unlimited.
     search_queries = beverages
 

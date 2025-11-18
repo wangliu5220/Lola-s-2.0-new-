@@ -1,8 +1,8 @@
 import json
 #Combine data from Part 1 and Part 2 to add url for extension.
-part2_response = "Team M/Data/beverages/part2_output.jsonl"
-part1_result = "Team M/Data/beverages/part1_output.jsonl"
-output_path = "Team M/Data/beverages/final_response.jsonl"
+part2_response = "Team_M/Data/beverages/part2_output.jsonl"
+part1_result = "Team_M/Data/beverages/part1_output.jsonl"
+output_path = "Team_M/Data/beverages/final_response.jsonl"
 
 # Load result_from_1.jsonl into a lookup dictionary {upc: image_url_1}
 upc_to_image = {}
